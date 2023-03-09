@@ -1,7 +1,9 @@
 package arith
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"math/big"
 
 	bn256 "github.com/ethereum/go-ethereum/crypto/bn256/cloudflare"
@@ -13,8 +15,8 @@ type Scalar struct {
 	val big.Int
 }
 
-func (c *Scalar) String() string {
-	return c.val.String()
+func (e *Scalar) String() string {
+	return e.val.String()
 }
 
 func NewScalar(val *big.Int) *Scalar {
@@ -56,13 +58,30 @@ func (e *Scalar) MarshalBinary() ([]byte, error) {
 }
 
 func (e *Scalar) UnmarshalBinary(m []byte) error {
-	if len(m) < NumBytesScalar {
-		return errors.New("message too short")
+	if len(m) != NumBytesScalar {
+		return fmt.Errorf("scalar should be represented with %d bytes", NumBytesScalar)
 	}
-	ret := new(big.Int).SetBytes(m[:NumBytesScalar])
+	ret := new(big.Int).SetBytes(m)
 	if ret.CmpAbs(bn256.Order) >= 0 {
 		return errors.New("scalar is over the field modulus")
 	}
 	e.val.Set(ret)
 	return nil
+}
+
+func (e *Scalar) MarshalJSON() ([]byte, error) {
+	bytesE, err := e.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(bytesE)
+}
+
+func (e *Scalar) UnmarshalJSON(data []byte) error {
+	var bytesE []byte
+	err := json.Unmarshal(data, &bytesE)
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalBinary(bytesE)
 }

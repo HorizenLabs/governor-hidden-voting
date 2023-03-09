@@ -5,47 +5,39 @@ import (
 )
 
 type Tally struct {
-	numYes int64
-	numNo  int64
+	NumYes int64
+	NumNo  int64
 }
 
 type EncryptedTally struct {
-	votes EncryptedVote
-	count int64
+	Votes EncryptedVote
+	Count int64
 }
 
 func NewEncryptedTally() *EncryptedTally {
 	tally := new(EncryptedTally)
-	tally.count = 0
+	tally.Count = 0
 	return tally
 }
 
-func (tally *Tally) NumYes() int64 {
-	return tally.numYes
-}
-
-func (tally *Tally) NumNo() int64 {
-	return tally.numNo
-}
-
 func (tally *Tally) NumVoters() int64 {
-	return tally.numYes + tally.numNo
+	return tally.NumYes + tally.NumNo
 }
 
 func (tally *EncryptedTally) Add(vote *EncryptedVote) *EncryptedTally {
-	if tally.count == 0 {
-		tally.votes.Set(vote)
+	if tally.Count == 0 {
+		tally.Votes.Set(vote)
 	} else {
-		tally.votes.Add(&tally.votes, vote)
+		tally.Votes.Add(&tally.Votes, vote)
 	}
-	tally.count++
+	tally.Count++
 	return tally
 }
 
 func (tally *EncryptedTally) Decrypt(sk *arith.Scalar) (*Tally, error) {
-	numYes, err := tally.votes.Decrypt(sk, tally.count)
+	numYes, err := tally.Votes.Decrypt(sk, tally.Count)
 	if err != nil {
 		return nil, err
 	}
-	return &Tally{numYes: numYes, numNo: tally.count - numYes}, nil
+	return &Tally{NumYes: numYes, NumNo: tally.Count - numYes}, nil
 }

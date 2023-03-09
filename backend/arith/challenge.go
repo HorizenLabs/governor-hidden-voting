@@ -2,7 +2,8 @@ package arith
 
 import (
 	"crypto/rand"
-	"errors"
+	"encoding/json"
+	"fmt"
 	"io"
 	"math/big"
 
@@ -82,10 +83,26 @@ func (e *Challenge) MarshalBinary() ([]byte, error) {
 }
 
 func (e *Challenge) UnmarshalBinary(m []byte) error {
-	if len(m) < NumBytesChallenge {
-		return errors.New("message too short")
+	if len(m) != NumBytesChallenge {
+		return fmt.Errorf("challenge should be represented with %d bytes", NumBytesScalar)
 	}
-	ret := new(big.Int).SetBytes(m[:NumBytesChallenge])
-	e.val.Set(ret)
+	e.val.Set(new(big.Int).SetBytes(m))
 	return nil
+}
+
+func (e Challenge) MarshalJSON() ([]byte, error) {
+	bytesE, err := e.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(bytesE)
+}
+
+func (e *Challenge) UnmarshalJSON(data []byte) error {
+	var bytesE []byte
+	err := json.Unmarshal(data, &bytesE)
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalBinary(bytesE)
 }

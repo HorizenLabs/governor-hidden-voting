@@ -11,11 +11,11 @@ func TestEncryptDecryptVote(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			encryptedVote, _, err := tc.vote.Encrypt(rand.Reader, keyPair.Pk())
+			encryptedVote, _, err := tc.vote.Encrypt(rand.Reader, &keyPair.Pk)
 			if err != nil {
 				t.Fatal(err)
 			}
-			got, err := encryptedVote.Decrypt(keyPair.Sk(), 1)
+			got, err := encryptedVote.Decrypt(&keyPair.Sk, 1)
 			if err != nil {
 				t.Fatal(err)
 			}

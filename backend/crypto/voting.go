@@ -17,8 +17,8 @@ const (
 )
 
 type EncryptedVote struct {
-	a arith.CurvePoint
-	b arith.CurvePoint
+	A arith.CurvePoint
+	B arith.CurvePoint
 }
 
 func (vote Vote) curvePoint() *arith.CurvePoint {
@@ -33,14 +33,14 @@ func (vote Vote) curvePoint() *arith.CurvePoint {
 }
 
 func (e *EncryptedVote) Set(v *EncryptedVote) *EncryptedVote {
-	e.a.Set(&v.a)
-	e.b.Set(&v.b)
+	e.A.Set(&v.A)
+	e.B.Set(&v.B)
 	return e
 }
 
 func (e *EncryptedVote) Add(a, b *EncryptedVote) *EncryptedVote {
-	e.a.Add(&a.a, &b.a)
-	e.b.Add(&a.b, &b.b)
+	e.A.Add(&a.A, &b.A)
+	e.B.Add(&a.B, &b.B)
 	return e
 }
 
@@ -52,15 +52,15 @@ func (vote Vote) Encrypt(reader io.Reader, pk *arith.CurvePoint) (*EncryptedVote
 	b := new(arith.CurvePoint).ScalarMult(pk, r)
 	b = new(arith.CurvePoint).Add(b, vote.curvePoint())
 	encryptedVote := new(EncryptedVote)
-	encryptedVote.a.Set(a)
-	encryptedVote.b.Set(b)
+	encryptedVote.A.Set(a)
+	encryptedVote.B.Set(b)
 	return encryptedVote, r, nil
 }
 
 func (vote *EncryptedVote) Decrypt(sk *arith.Scalar, n int64) (int64, error) {
 	// Decrypt the vote using baby-step giant-step algorithm
-	target := new(arith.CurvePoint).ScalarMult(&vote.a, new(arith.Scalar).Neg(sk))
-	target = new(arith.CurvePoint).Add(target, &vote.b)
+	target := new(arith.CurvePoint).ScalarMult(&vote.A, new(arith.Scalar).Neg(sk))
+	target = new(arith.CurvePoint).Add(target, &vote.B)
 	m := int64(math.Ceil(math.Sqrt(float64(n + 1))))
 	gPow := make(map[string]int64)
 	for j := int64(0); j < m; j++ {
@@ -86,34 +86,4 @@ func (vote *EncryptedVote) Decrypt(sk *arith.Scalar, n int64) (int64, error) {
 		gamma.Add(gamma, mNegG)
 	}
 	return 0, errors.New("error during vote decryption")
-}
-
-func (vote *EncryptedVote) MarshalBinary() ([]byte, error) {
-	a, err := vote.a.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	b, err := vote.b.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	ret := make([]byte, 0, arith.NumBytesCurvePoint*2)
-	ret = append(ret, a...)
-	ret = append(ret, b...)
-	return ret, nil
-}
-
-func (vote *EncryptedVote) UnmarshalBinary(m []byte) error {
-	if len(m) < 2*arith.NumBytesCurvePoint {
-		return errors.New("EncryptedVote: not enough data")
-	}
-	err := vote.a.UnmarshalBinary(m)
-	if err != nil {
-		return err
-	}
-	err = vote.b.UnmarshalBinary(m)
-	if err != nil {
-		return err
-	}
-	return nil
 }

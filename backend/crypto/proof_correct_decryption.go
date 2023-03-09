@@ -1,6 +1,7 @@
 package crypto
 
 import (
+	"encoding/json"
 	"errors"
 	"io"
 	"math/big"
@@ -8,13 +9,10 @@ import (
 	"github.com/HorizenLabs/e-voting-poc/backend/arith"
 )
 
-const numBytesProofCorrectDecryption = 2*arith.NumBytesCurvePoint +
-	arith.NumBytesScalar
-
 type ProofCorrectDecryption struct {
-	u arith.CurvePoint
-	v arith.CurvePoint
-	s arith.Scalar
+	U arith.CurvePoint
+	V arith.CurvePoint
+	S arith.Scalar
 }
 
 func ProveCorrectDecryption(
@@ -26,17 +24,17 @@ func ProveCorrectDecryption(
 	if err != nil {
 		return nil, err
 	}
-	u := new(arith.CurvePoint).ScalarMult(&tally.votes.a, r)
+	u := new(arith.CurvePoint).ScalarMult(&tally.Votes.A, r)
 
-	bytesPk, err := keyPair.Pk().MarshalBinary()
+	bytesPk, err := keyPair.Pk.MarshalBinary()
 	if err != nil {
 		return nil, err
 	}
-	bytesA, err := tally.votes.a.MarshalBinary()
+	bytesA, err := tally.Votes.A.MarshalBinary()
 	if err != nil {
 		return nil, err
 	}
-	bytesB, err := tally.votes.b.MarshalBinary()
+	bytesB, err := tally.Votes.B.MarshalBinary()
 	if err != nil {
 		return nil, err
 	}
@@ -55,12 +53,12 @@ func ProveCorrectDecryption(
 		bytesU,
 		bytesV)
 
-	s := new(arith.Scalar).Mul(c.Scalar(), keyPair.Sk())
+	s := new(arith.Scalar).Mul(c.Scalar(), &keyPair.Sk)
 	s = new(arith.Scalar).Add(r, s)
 	proof := new(ProofCorrectDecryption)
-	proof.u.Set(u)
-	proof.v.Set(v)
-	proof.s.Set(s)
+	proof.U.Set(u)
+	proof.V.Set(v)
+	proof.S.Set(s)
 	return proof, nil
 }
 
@@ -70,12 +68,12 @@ func VerifyCorrectDecryption(
 	result int64,
 	pk *arith.CurvePoint) error {
 
-	m, err := proof.MarshalBinary()
+	m, err := json.Marshal(proof)
 	if err != nil {
 		return err
 	}
 	proof = new(ProofCorrectDecryption)
-	err = proof.UnmarshalBinary(m)
+	err = json.Unmarshal(m, proof)
 	if err != nil {
 		return err
 	}
@@ -84,19 +82,19 @@ func VerifyCorrectDecryption(
 	if err != nil {
 		return err
 	}
-	bytesA, err := tally.votes.a.MarshalBinary()
+	bytesA, err := tally.Votes.A.MarshalBinary()
 	if err != nil {
 		return err
 	}
-	bytesB, err := tally.votes.b.MarshalBinary()
+	bytesB, err := tally.Votes.B.MarshalBinary()
 	if err != nil {
 		return err
 	}
-	bytesU, err := proof.u.MarshalBinary()
+	bytesU, err := proof.U.MarshalBinary()
 	if err != nil {
 		return err
 	}
-	bytesV, err := proof.v.MarshalBinary()
+	bytesV, err := proof.V.MarshalBinary()
 	if err != nil {
 		return err
 	}
@@ -107,59 +105,19 @@ func VerifyCorrectDecryption(
 		bytesU,
 		bytesV)
 	d := new(arith.CurvePoint).ScalarBaseMult(arith.NewScalar(big.NewInt(-result)))
-	d = new(arith.CurvePoint).Add(d, &tally.votes.b)
-	sA := new(arith.CurvePoint).ScalarMult(&tally.votes.a, &proof.s)
+	d = new(arith.CurvePoint).Add(d, &tally.Votes.B)
+	sA := new(arith.CurvePoint).ScalarMult(&tally.Votes.A, &proof.S)
 	cD := new(arith.CurvePoint).ScalarMult(d, c.Scalar())
-	uPlusCD := new(arith.CurvePoint).Add(&proof.u, cD)
+	uPlusCD := new(arith.CurvePoint).Add(&proof.U, cD)
 	if !sA.Equal(uPlusCD) {
 		return errors.New("decryption proof verification failed, first check")
 	}
 
-	sG := new(arith.CurvePoint).ScalarBaseMult(&proof.s)
+	sG := new(arith.CurvePoint).ScalarBaseMult(&proof.S)
 	cPk := new(arith.CurvePoint).ScalarMult(pk, c.Scalar())
-	vPlusCPk := new(arith.CurvePoint).Add(&proof.v, cPk)
+	vPlusCPk := new(arith.CurvePoint).Add(&proof.V, cPk)
 	if !sG.Equal(vPlusCPk) {
 		return errors.New("decryption proof verification failed, second check")
-	}
-	return nil
-}
-
-func (proof *ProofCorrectDecryption) MarshalBinary() ([]byte, error) {
-	bytesU, err := proof.u.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	bytesV, err := proof.v.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	bytesS, err := proof.s.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	ret := make([]byte, 0, numBytesProofCorrectDecryption)
-	ret = append(ret, bytesU...)
-	ret = append(ret, bytesV...)
-	ret = append(ret, bytesS...)
-	return ret, nil
-}
-
-func (proof *ProofCorrectDecryption) UnmarshalBinary(m []byte) error {
-	if len(m) < numBytesProofCorrectDecryption {
-		return errors.New("ProofCorrectDecryption: not enough data")
-	}
-	var err error
-
-	if err = proof.u.UnmarshalBinary(m); err != nil {
-		return err
-	}
-	m = m[arith.NumBytesCurvePoint:]
-	if err = proof.v.UnmarshalBinary(m); err != nil {
-		return err
-	}
-	m = m[arith.NumBytesCurvePoint:]
-	if err = proof.s.UnmarshalBinary(m); err != nil {
-		return err
 	}
 	return nil
 }

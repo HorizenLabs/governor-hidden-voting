@@ -1,6 +1,7 @@
 package arith
 
 import (
+	"encoding/json"
 	"math/big"
 	"testing"
 
@@ -30,6 +31,7 @@ func TestUnmarshalInvalidScalar(t *testing.T) {
 		m []byte
 	}{
 		"too short":    {m: make([]byte, NumBytesScalar-1)},
+		"too long":     {m: make([]byte, NumBytesScalar+1)},
 		"over modulus": {m: bn256.Order.Bytes()},
 	}
 
@@ -64,6 +66,35 @@ func TestMarshalUnmarshalScalar(t *testing.T) {
 			}
 			aUnmarshaled := new(Scalar)
 			err = aUnmarshaled.UnmarshalBinary(m)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !aUnmarshaled.Equal(a) {
+				t.Fatal("unmarshaled a is different from a")
+			}
+		})
+	}
+}
+
+func TestMarshalUnmarshalJSONScalar(t *testing.T) {
+	tests := map[string]struct {
+		n *big.Int
+	}{
+		"zero":      {n: big.NewInt(0)},
+		"one":       {n: big.NewInt(1)},
+		"random":    {n: big.NewInt(1234)},
+		"minus one": {n: big.NewInt(-1)},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			a := NewScalar(tc.n)
+			m, err := json.Marshal(a)
+			if err != nil {
+				t.Fatal(err)
+			}
+			aUnmarshaled := new(Scalar)
+			err = json.Unmarshal(m, aUnmarshaled)
 			if err != nil {
 				t.Fatal(err)
 			}

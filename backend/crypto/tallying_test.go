@@ -18,15 +18,15 @@ func TestTallying(t *testing.T) {
 			encryptedTally := generateEncryptedTally(
 				t,
 				rand.Reader,
-				keyPair.Pk(),
+				&keyPair.Pk,
 				tc.numVoters,
 				tc.numYes)
-			tally, err := encryptedTally.Decrypt(keyPair.Sk())
+			tally, err := encryptedTally.Decrypt(&keyPair.Sk)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if tc.numYes != tally.NumYes() {
-				t.Fatalf("expected: %d, got: %d", tc.numYes, tally.NumYes())
+			if tc.numYes != tally.NumYes {
+				t.Fatalf("expected: %d, got: %d", tc.numYes, tally.NumYes)
 			}
 		})
 	}

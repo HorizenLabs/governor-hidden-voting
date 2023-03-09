@@ -2,6 +2,8 @@ package arith
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"io"
 
 	bn256 "github.com/ethereum/go-ethereum/crypto/bn256/cloudflare"
@@ -62,6 +64,26 @@ func (a *CurvePoint) MarshalBinary() ([]byte, error) {
 }
 
 func (a *CurvePoint) UnmarshalBinary(m []byte) error {
+	if len(m) != NumBytesCurvePoint {
+		return fmt.Errorf("curve point should be represented with %d bytes", NumBytesCurvePoint)
+	}
 	_, err := a.p.Unmarshal(m)
 	return err
+}
+
+func (e *CurvePoint) MarshalJSON() ([]byte, error) {
+	bytesE, err := e.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(bytesE)
+}
+
+func (e *CurvePoint) UnmarshalJSON(data []byte) error {
+	var bytesE []byte
+	err := json.Unmarshal(data, &bytesE)
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalBinary(bytesE)
 }
