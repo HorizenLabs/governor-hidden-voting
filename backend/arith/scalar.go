@@ -13,6 +13,10 @@ type Scalar struct {
 	val big.Int
 }
 
+func (c *Scalar) String() string {
+	return c.val.String()
+}
+
 func NewScalar(val *big.Int) *Scalar {
 	return &Scalar{*new(big.Int).Mod(val, bn256.Order)}
 }
