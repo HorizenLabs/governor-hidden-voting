@@ -10,8 +10,11 @@ func TestUnmarshalChallengeMessageTooShort(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	m := a.Marshal()
-	_, err = a.Unmarshal(m[1:])
+	m, err := a.MarshalBinary()
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = a.UnmarshalBinary(m[1:])
 	if err == nil {
 		t.Fatalf("should be impossible to unmarshal a message shorter than %d bytes into a challenge", NumBytesScalar)
 	}

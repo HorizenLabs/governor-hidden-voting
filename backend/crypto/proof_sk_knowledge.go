@@ -20,22 +20,43 @@ func ProveSkKnowledge(reader io.Reader, keyPair *KeyPair) (*ProofSkKnowledge, er
 	if err != nil {
 		return nil, err
 	}
-	c := arith.FiatShamirChallenge(
-		keyPair.Pk().Marshal(),
-		b.Marshal())
+	bytesPk, err := keyPair.Pk().MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	bytesB, err := b.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	c := arith.FiatShamirChallenge(bytesPk, bytesB)
 	d := new(arith.Scalar).Mul(c.Scalar(), keyPair.Sk())
 	d = new(arith.Scalar).Add(r, d)
-	return &ProofSkKnowledge{b: *b, d: *d}, nil
+	proof := new(ProofSkKnowledge)
+	proof.b.Set(b)
+	proof.d.Set(d)
+	return proof, nil
 }
 
 func VerifySkKnowledge(proof *ProofSkKnowledge, pk *arith.CurvePoint) error {
-	m := proof.Marshal()
+	m, err := proof.MarshalBinary()
+	if err != nil {
+		return err
+	}
 	proof = new(ProofSkKnowledge)
-	proof.Unmarshal(m)
+	err = proof.UnmarshalBinary(m)
+	if err != nil {
+		return err
+	}
 
-	c := arith.FiatShamirChallenge(
-		pk.Marshal(),
-		proof.b.Marshal())
+	bytesPk, err := pk.MarshalBinary()
+	if err != nil {
+		return err
+	}
+	bytesB, err := proof.b.MarshalBinary()
+	if err != nil {
+		return err
+	}
+	c := arith.FiatShamirChallenge(bytesPk, bytesB)
 	cPk := new(arith.CurvePoint).ScalarMult(pk, c.Scalar())
 	bPlusCPk := new(arith.CurvePoint).Add(&proof.b, cPk)
 	phi := new(arith.CurvePoint).ScalarBaseMult(&proof.d)
@@ -45,26 +66,34 @@ func VerifySkKnowledge(proof *ProofSkKnowledge, pk *arith.CurvePoint) error {
 	return nil
 }
 
-func (proof *ProofSkKnowledge) Marshal() []byte {
+func (proof *ProofSkKnowledge) MarshalBinary() ([]byte, error) {
+	bytesB, err := proof.b.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	bytesD, err := proof.d.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
 	ret := make([]byte, 0, numBytesProofSkKnowledge)
-	ret = append(ret, proof.b.Marshal()...)
-	ret = append(ret, proof.d.Marshal()...)
-	return ret
+	ret = append(ret, bytesB...)
+	ret = append(ret, bytesD...)
+	return ret, nil
 }
 
-func (proof *ProofSkKnowledge) Unmarshal(m []byte) ([]byte, error) {
+func (proof *ProofSkKnowledge) UnmarshalBinary(m []byte) error {
 	if len(m) < numBytesProofSkKnowledge {
-		return nil, errors.New("ProofSkKnowledge: not enough data")
+		return errors.New("ProofSkKnowledge: not enough data")
 	}
 	var err error
 
-	if m, err = proof.b.Unmarshal(m); err != nil {
-		return nil, err
+	if err = proof.b.UnmarshalBinary(m); err != nil {
+		return err
+	}
+	m = m[arith.NumBytesCurvePoint:]
+	if err = proof.d.UnmarshalBinary(m); err != nil {
+		return err
 	}
 
-	if m, err = proof.d.Unmarshal(m); err != nil {
-		return nil, err
-	}
-
-	return m, nil
+	return nil
 }

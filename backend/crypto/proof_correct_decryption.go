@@ -21,20 +21,47 @@ func ProveCorrectDecryption(
 	reader io.Reader,
 	tally *EncryptedTally,
 	keyPair *KeyPair) (*ProofCorrectDecryption, error) {
+
 	r, v, err := arith.RandomCurvePoint(reader)
 	if err != nil {
 		return nil, err
 	}
 	u := new(arith.CurvePoint).ScalarMult(&tally.votes.a, r)
+
+	bytesPk, err := keyPair.Pk().MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	bytesA, err := tally.votes.a.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	bytesB, err := tally.votes.b.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	bytesU, err := u.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	bytesV, err := v.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
 	c := arith.FiatShamirChallenge(
-		keyPair.Pk().Marshal(),
-		tally.votes.a.Marshal(),
-		tally.votes.b.Marshal(),
-		u.Marshal(),
-		v.Marshal())
+		bytesPk,
+		bytesA,
+		bytesB,
+		bytesU,
+		bytesV)
+
 	s := new(arith.Scalar).Mul(c.Scalar(), keyPair.Sk())
 	s = new(arith.Scalar).Add(r, s)
-	return &ProofCorrectDecryption{u: *u, v: *v, s: *s}, nil
+	proof := new(ProofCorrectDecryption)
+	proof.u.Set(u)
+	proof.v.Set(v)
+	proof.s.Set(s)
+	return proof, nil
 }
 
 func VerifyCorrectDecryption(
@@ -43,17 +70,42 @@ func VerifyCorrectDecryption(
 	result int64,
 	pk *arith.CurvePoint) error {
 
-	m := proof.Marshal()
+	m, err := proof.MarshalBinary()
+	if err != nil {
+		return err
+	}
 	proof = new(ProofCorrectDecryption)
-	proof.Unmarshal(m)
+	err = proof.UnmarshalBinary(m)
+	if err != nil {
+		return err
+	}
 
+	bytesPk, err := pk.MarshalBinary()
+	if err != nil {
+		return err
+	}
+	bytesA, err := tally.votes.a.MarshalBinary()
+	if err != nil {
+		return err
+	}
+	bytesB, err := tally.votes.b.MarshalBinary()
+	if err != nil {
+		return err
+	}
+	bytesU, err := proof.u.MarshalBinary()
+	if err != nil {
+		return err
+	}
+	bytesV, err := proof.v.MarshalBinary()
+	if err != nil {
+		return err
+	}
 	c := arith.FiatShamirChallenge(
-		pk.Marshal(),
-		tally.votes.a.Marshal(),
-		tally.votes.b.Marshal(),
-		proof.u.Marshal(),
-		proof.v.Marshal())
-
+		bytesPk,
+		bytesA,
+		bytesB,
+		bytesU,
+		bytesV)
 	d := new(arith.CurvePoint).ScalarBaseMult(arith.NewScalar(big.NewInt(-result)))
 	d = new(arith.CurvePoint).Add(d, &tally.votes.b)
 	sA := new(arith.CurvePoint).ScalarMult(&tally.votes.a, &proof.s)
@@ -72,30 +124,42 @@ func VerifyCorrectDecryption(
 	return nil
 }
 
-func (proof *ProofCorrectDecryption) Marshal() []byte {
+func (proof *ProofCorrectDecryption) MarshalBinary() ([]byte, error) {
+	bytesU, err := proof.u.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	bytesV, err := proof.v.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	bytesS, err := proof.s.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
 	ret := make([]byte, 0, numBytesProofCorrectDecryption)
-	ret = append(ret, proof.u.Marshal()...)
-	ret = append(ret, proof.v.Marshal()...)
-	ret = append(ret, proof.s.Marshal()...)
-	return ret
+	ret = append(ret, bytesU...)
+	ret = append(ret, bytesV...)
+	ret = append(ret, bytesS...)
+	return ret, nil
 }
 
-func (proof *ProofCorrectDecryption) Unmarshal(m []byte) ([]byte, error) {
+func (proof *ProofCorrectDecryption) UnmarshalBinary(m []byte) error {
 	if len(m) < numBytesProofCorrectDecryption {
-		return nil, errors.New("ProofCorrectDecryption: not enough data")
+		return errors.New("ProofCorrectDecryption: not enough data")
 	}
 	var err error
 
-	if m, err = proof.u.Unmarshal(m); err != nil {
-		return nil, err
+	if err = proof.u.UnmarshalBinary(m); err != nil {
+		return err
 	}
-
-	if m, err = proof.v.Unmarshal(m); err != nil {
-		return nil, err
+	m = m[arith.NumBytesCurvePoint:]
+	if err = proof.v.UnmarshalBinary(m); err != nil {
+		return err
 	}
-
-	if m, err = proof.s.Unmarshal(m); err != nil {
-		return nil, err
+	m = m[arith.NumBytesCurvePoint:]
+	if err = proof.s.UnmarshalBinary(m); err != nil {
+		return err
 	}
-	return m, nil
+	return nil
 }

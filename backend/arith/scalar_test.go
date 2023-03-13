@@ -36,7 +36,7 @@ func TestUnmarshalInvalidScalar(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			a := new(Scalar)
-			_, err := a.Unmarshal(tc.m)
+			err := a.UnmarshalBinary(tc.m)
 			if err == nil {
 				t.Fatalf("should be impossible to unmarshal a scalar %s", name)
 			}
@@ -58,17 +58,17 @@ func TestMarshalUnmarshalScalar(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			a := NewScalar(tc.n)
-			m := a.Marshal()
+			m, err := a.MarshalBinary()
+			if err != nil {
+				t.Fatal(err)
+			}
 			aUnmarshaled := new(Scalar)
-			m, err := aUnmarshaled.Unmarshal(m)
+			err = aUnmarshaled.UnmarshalBinary(m)
 			if err != nil {
 				t.Fatal(err)
 			}
 			if !aUnmarshaled.Equal(a) {
 				t.Fatal("unmarshaled a is different from a")
-			}
-			if len(m) != 0 {
-				t.Fatal("message should be empty after unmarshaling")
 			}
 		})
 	}
@@ -87,11 +87,13 @@ func TestMarshalledScalarSize(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			a := NewScalar(tc.n)
-			m := a.Marshal()
+			m, err := a.MarshalBinary()
+			if err != nil {
+				t.Fatal(err)
+			}
 			if len(m) != NumBytesScalar {
 				t.Fatalf("marshalled scalar byte length is %d, should be %d", len(m), NumBytesScalar)
 			}
 		})
 	}
-
 }

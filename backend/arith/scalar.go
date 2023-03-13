@@ -18,7 +18,14 @@ func (c *Scalar) String() string {
 }
 
 func NewScalar(val *big.Int) *Scalar {
-	return &Scalar{*new(big.Int).Mod(val, bn256.Order)}
+	scalar := new(Scalar)
+	scalar.val.Set(new(big.Int).Mod(val, bn256.Order))
+	return scalar
+}
+
+func (e *Scalar) Set(a *Scalar) *Scalar {
+	e.val.Set(&a.val)
+	return e
 }
 
 func (e *Scalar) Add(a, b *Scalar) *Scalar {
@@ -42,20 +49,20 @@ func (a *Scalar) Equal(b *Scalar) bool {
 	return a.val.Cmp(&b.val) == 0
 }
 
-func (e *Scalar) Marshal() []byte {
+func (e *Scalar) MarshalBinary() ([]byte, error) {
 	buf := make([]byte, NumBytesScalar)
 	e.val.FillBytes(buf)
-	return buf
+	return buf, nil
 }
 
-func (e *Scalar) Unmarshal(m []byte) ([]byte, error) {
+func (e *Scalar) UnmarshalBinary(m []byte) error {
 	if len(m) < NumBytesScalar {
-		return nil, errors.New("message too short")
+		return errors.New("message too short")
 	}
 	ret := new(big.Int).SetBytes(m[:NumBytesScalar])
 	if ret.CmpAbs(bn256.Order) >= 0 {
-		return nil, errors.New("scalar is over the field modulus")
+		return errors.New("scalar is over the field modulus")
 	}
 	e.val.Set(ret)
-	return m[NumBytesScalar:], nil
+	return nil
 }

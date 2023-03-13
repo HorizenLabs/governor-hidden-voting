@@ -22,12 +22,16 @@ func (c *Challenge) String() string {
 func FiatShamirChallenge(data ...[]byte) *Challenge {
 	hashBytes := crypto.Keccak256(data...)
 	// We employ 128 bits challenges
-	return &Challenge{*new(big.Int).SetBytes(hashBytes[16:])}
+	challenge := new(Challenge)
+	challenge.val.SetBytes(hashBytes[16:])
+	return challenge
 }
 
 func RandomChallenge(reader io.Reader) (*Challenge, error) {
 	val, err := rand.Int(reader, challengeModulus())
-	return &Challenge{*val}, err
+	challenge := new(Challenge)
+	challenge.val.Set(val)
+	return challenge, err
 }
 
 func challengeModulus() *big.Int {
@@ -37,6 +41,11 @@ func challengeModulus() *big.Int {
 
 func (c *Challenge) Scalar() *Scalar {
 	return NewScalar(&c.val)
+}
+
+func (e *Challenge) Set(a *Challenge) *Challenge {
+	e.val.Set(&a.val)
+	return e
 }
 
 func (e *Challenge) Add(a, b *Challenge) *Challenge {
@@ -66,17 +75,17 @@ func (a *Challenge) Equal(b *Challenge) bool {
 	return a.val.Cmp(&b.val) == 0
 }
 
-func (e *Challenge) Marshal() []byte {
+func (e *Challenge) MarshalBinary() ([]byte, error) {
 	buf := make([]byte, NumBytesChallenge)
 	e.val.FillBytes(buf)
-	return buf
+	return buf, nil
 }
 
-func (e *Challenge) Unmarshal(m []byte) ([]byte, error) {
+func (e *Challenge) UnmarshalBinary(m []byte) error {
 	if len(m) < NumBytesChallenge {
-		return nil, errors.New("message too short")
+		return errors.New("message too short")
 	}
 	ret := new(big.Int).SetBytes(m[:NumBytesChallenge])
 	e.val.Set(ret)
-	return m[NumBytesChallenge:], nil
+	return nil
 }

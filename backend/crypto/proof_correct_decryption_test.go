@@ -28,3 +28,40 @@ func TestProveAndVerifyCorrectDecryption(t *testing.T) {
 		})
 	}
 }
+
+func TestMarshalUnmarshalProofCorrectDecryption(t *testing.T) {
+	proof := generateProofCorrectDecryption(t)
+	m, err := proof.MarshalBinary()
+	if err != nil {
+		t.Fatal(err)
+	}
+	newProof := new(ProofCorrectDecryption)
+	err = newProof.UnmarshalBinary(m)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !proof.u.Equal(&newProof.u) {
+		t.Fatalf("s: got %s, expected %s", &newProof.u, &proof.u)
+	}
+	if !proof.v.Equal(&newProof.v) {
+		t.Fatalf("v: got %s, expected %s", &newProof.v, &proof.v)
+	}
+	if !proof.s.Equal(&newProof.s) {
+		t.Fatalf("s: got %s, expected %s", &newProof.s, &proof.s)
+	}
+}
+
+func generateProofCorrectDecryption(t *testing.T) *ProofCorrectDecryption {
+	keyPair := generateKeyPair(t, rand.Reader)
+	encryptedTally := generateEncryptedTally(
+		t,
+		rand.Reader,
+		keyPair.Pk(),
+		1,
+		1)
+	proof, err := ProveCorrectDecryption(rand.Reader, encryptedTally, keyPair)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return proof
+}

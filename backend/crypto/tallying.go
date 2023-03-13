@@ -47,5 +47,5 @@ func (tally *EncryptedTally) Decrypt(sk *arith.Scalar) (*Tally, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Tally{numYes: *numYes, numNo: tally.count - *numYes}, nil
+	return &Tally{numYes: numYes, numNo: tally.count - numYes}, nil
 }

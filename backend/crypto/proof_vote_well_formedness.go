@@ -63,26 +63,55 @@ func ProveVoteWellFormedness(
 	}
 	bHonest := new(arith.CurvePoint).ScalarMult(pk, rPrime)
 
+	bytesPk, err := pk.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	bytesA, err := encryptedVote.a.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	bytesB, err := encryptedVote.b.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	bytesACheat, err := aCheat.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	bytesBCheat, err := bCheat.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	bytesAHonest, err := aHonest.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	bytesBHonest, err := bHonest.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+
 	var c *arith.Challenge
 	switch vote {
 	case Yes:
 		c = arith.FiatShamirChallenge(
-			pk.Marshal(),
-			encryptedVote.a.Marshal(),
-			encryptedVote.b.Marshal(),
-			aCheat.Marshal(),
-			bCheat.Marshal(),
-			aHonest.Marshal(),
-			bHonest.Marshal())
+			bytesPk,
+			bytesA,
+			bytesB,
+			bytesACheat,
+			bytesBCheat,
+			bytesAHonest,
+			bytesBHonest)
 	case No:
 		c = arith.FiatShamirChallenge(
-			pk.Marshal(),
-			encryptedVote.a.Marshal(),
-			encryptedVote.b.Marshal(),
-			aHonest.Marshal(),
-			bHonest.Marshal(),
-			aCheat.Marshal(),
-			bCheat.Marshal())
+			bytesPk,
+			bytesA,
+			bytesB,
+			bytesAHonest,
+			bytesBHonest,
+			bytesACheat,
+			bytesBCheat)
 	}
 
 	cHonest := new(arith.Challenge).Sub(c, cCheat)
@@ -90,30 +119,26 @@ func ProveVoteWellFormedness(
 	cHonestR := new(arith.Scalar).Mul(cHonest.Scalar(), r)
 	rHonest := new(arith.Scalar).Add(rPrime, cHonestR)
 
-	var proof ProofVoteWellFormedness
+	proof := new(ProofVoteWellFormedness)
 	switch vote {
 	case Yes:
-		proof = ProofVoteWellFormedness{
-			a0: *aCheat,
-			a1: *aHonest,
-			b0: *bCheat,
-			b1: *bHonest,
-			c0: *cCheat,
-			r0: *rCheat,
-			r1: *rHonest,
-		}
+		proof.a0.Set(aCheat)
+		proof.a1.Set(aHonest)
+		proof.b0.Set(bCheat)
+		proof.b1.Set(bHonest)
+		proof.c0.Set(cCheat)
+		proof.r0.Set(rCheat)
+		proof.r1.Set(rHonest)
 	case No:
-		proof = ProofVoteWellFormedness{
-			a0: *aHonest,
-			a1: *aCheat,
-			b0: *bHonest,
-			b1: *bCheat,
-			c0: *cHonest,
-			r0: *rHonest,
-			r1: *rCheat,
-		}
+		proof.a0.Set(aHonest)
+		proof.a1.Set(aCheat)
+		proof.b0.Set(bHonest)
+		proof.b1.Set(bCheat)
+		proof.c0.Set(cHonest)
+		proof.r0.Set(rHonest)
+		proof.r1.Set(rCheat)
 	}
-	return &proof, nil
+	return proof, nil
 }
 
 func VerifyVoteWellFormedness(
@@ -121,18 +146,53 @@ func VerifyVoteWellFormedness(
 	vote *EncryptedVote,
 	pk *arith.CurvePoint) error {
 
-	m := proof.Marshal()
+	m, err := proof.MarshalBinary()
+	if err != nil {
+		return err
+	}
 	proof = new(ProofVoteWellFormedness)
-	proof.Unmarshal(m)
+	err = proof.UnmarshalBinary(m)
+	if err != nil {
+		return err
+	}
+
+	bytesPk, err := pk.MarshalBinary()
+	if err != nil {
+		return err
+	}
+	bytesA, err := vote.a.MarshalBinary()
+	if err != nil {
+		return err
+	}
+	bytesB, err := vote.b.MarshalBinary()
+	if err != nil {
+		return err
+	}
+	bytesA0, err := proof.a0.MarshalBinary()
+	if err != nil {
+		return err
+	}
+	bytesB0, err := proof.b0.MarshalBinary()
+	if err != nil {
+		return err
+	}
+	bytesA1, err := proof.a1.MarshalBinary()
+	if err != nil {
+		return err
+	}
+	bytesB1, err := proof.b1.MarshalBinary()
+	if err != nil {
+		return err
+	}
 
 	c := arith.FiatShamirChallenge(
-		pk.Marshal(),
-		vote.a.Marshal(),
-		vote.b.Marshal(),
-		proof.a0.Marshal(),
-		proof.b0.Marshal(),
-		proof.a1.Marshal(),
-		proof.b1.Marshal(),
+		bytesPk,
+		bytesA,
+		bytesB,
+		bytesA0,
+		bytesB0,
+		bytesA1,
+		bytesB1,
 	)
 	c1 := new(arith.Challenge).Sub(c, &proof.c0)
 
@@ -169,51 +229,79 @@ func VerifyVoteWellFormedness(
 	return nil
 }
 
-func (proof *ProofVoteWellFormedness) Marshal() []byte {
-	ret := make([]byte, 0, numBytesProofVoteWellFormedness)
-	ret = append(ret, proof.a0.Marshal()...)
-	ret = append(ret, proof.a1.Marshal()...)
-	ret = append(ret, proof.b0.Marshal()...)
-	ret = append(ret, proof.b1.Marshal()...)
-	ret = append(ret, proof.r0.Marshal()...)
-	ret = append(ret, proof.r1.Marshal()...)
-	ret = append(ret, proof.c0.Marshal()...)
-	return ret
+func (proof *ProofVoteWellFormedness) MarshalBinary() ([]byte, error) {
+	bytesA0, err := proof.a0.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	bytesA1, err := proof.a1.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	bytesB0, err := proof.b0.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	bytesB1, err := proof.b1.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	bytesR0, err := proof.r0.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	bytesR1, err := proof.r1.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	bytesC0, err := proof.c0.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+
+	ret := make([]byte, 0, numBytesProofSkKnowledge)
+	ret = append(ret, bytesA0...)
+	ret = append(ret, bytesA1...)
+	ret = append(ret, bytesB0...)
+	ret = append(ret, bytesB1...)
+	ret = append(ret, bytesR0...)
+	ret = append(ret, bytesR1...)
+	ret = append(ret, bytesC0...)
+	return ret, nil
 }
 
-func (proof *ProofVoteWellFormedness) Unmarshal(m []byte) ([]byte, error) {
+func (proof *ProofVoteWellFormedness) UnmarshalBinary(m []byte) error {
 	if len(m) < numBytesProofVoteWellFormedness {
-		return nil, errors.New("ProofVoteWellFormedness: not enough data")
+		return errors.New("ProofVoteWellFormedness: not enough data")
 	}
 	var err error
 
-	if m, err = proof.a0.Unmarshal(m); err != nil {
-		return nil, err
+	if err = proof.a0.UnmarshalBinary(m); err != nil {
+		return err
 	}
-
-	if m, err = proof.a1.Unmarshal(m); err != nil {
-		return nil, err
+	m = m[arith.NumBytesCurvePoint:]
+	if err = proof.a1.UnmarshalBinary(m); err != nil {
+		return err
 	}
-
-	if m, err = proof.b0.Unmarshal(m); err != nil {
-		return nil, err
+	m = m[arith.NumBytesCurvePoint:]
+	if err = proof.b0.UnmarshalBinary(m); err != nil {
+		return err
 	}
-
-	if m, err = proof.b1.Unmarshal(m); err != nil {
-		return nil, err
+	m = m[arith.NumBytesCurvePoint:]
+	if err = proof.b1.UnmarshalBinary(m); err != nil {
+		return err
 	}
-
-	if m, err = proof.r0.Unmarshal(m); err != nil {
-		return nil, err
+	m = m[arith.NumBytesCurvePoint:]
+	if err = proof.r0.UnmarshalBinary(m); err != nil {
+		return err
 	}
-
-	if m, err = proof.r1.Unmarshal(m); err != nil {
-		return nil, err
+	m = m[arith.NumBytesScalar:]
+	if err = proof.r1.UnmarshalBinary(m); err != nil {
+		return err
 	}
-
-	if m, err = proof.c0.Unmarshal(m); err != nil {
-		return nil, err
+	m = m[arith.NumBytesScalar:]
+	if err = proof.c0.UnmarshalBinary(m); err != nil {
+		return err
 	}
-
-	return m, nil
+	return nil
 }

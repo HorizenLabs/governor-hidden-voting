@@ -6,13 +6,7 @@ import (
 )
 
 func TestEncryptDecryptVote(t *testing.T) {
-	tests := map[string]struct {
-		vote Vote
-		want int64
-	}{
-		"yes": {vote: Yes, want: 1},
-		"no":  {vote: No, want: 0},
-	}
+	tests := generateVotingTests()
 	keyPair := generateKeyPair(t, rand.Reader)
 
 	for name, tc := range tests {
@@ -25,9 +19,22 @@ func TestEncryptDecryptVote(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if *got != tc.want {
-				t.Fatalf("expected: %d, got: %d", tc.want, *got)
+			if got != tc.result {
+				t.Fatalf("expected: %d, got: %d", tc.result, got)
 			}
 		})
 	}
+}
+
+type votingTests map[string]struct {
+	vote   Vote
+	result int64
+}
+
+func generateVotingTests() votingTests {
+	tests := votingTests{
+		"yes": {vote: Yes, result: 1},
+		"no":  {vote: No, result: 0},
+	}
+	return tests
 }

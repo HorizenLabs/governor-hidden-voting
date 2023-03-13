@@ -51,10 +51,13 @@ func (vote Vote) Encrypt(reader io.Reader, pk *arith.CurvePoint) (*EncryptedVote
 	}
 	b := new(arith.CurvePoint).ScalarMult(pk, r)
 	b = new(arith.CurvePoint).Add(b, vote.curvePoint())
-	return &EncryptedVote{a: *a, b: *b}, r, nil
+	encryptedVote := new(EncryptedVote)
+	encryptedVote.a.Set(a)
+	encryptedVote.b.Set(b)
+	return encryptedVote, r, nil
 }
 
-func (vote *EncryptedVote) Decrypt(sk *arith.Scalar, n int64) (*int64, error) {
+func (vote *EncryptedVote) Decrypt(sk *arith.Scalar, n int64) (int64, error) {
 	// Decrypt the vote using baby-step giant-step algorithm
 	target := new(arith.CurvePoint).ScalarMult(&vote.a, new(arith.Scalar).Neg(sk))
 	target = new(arith.CurvePoint).Add(target, &vote.b)
@@ -62,41 +65,55 @@ func (vote *EncryptedVote) Decrypt(sk *arith.Scalar, n int64) (*int64, error) {
 	gPow := make(map[string]int64)
 	for j := int64(0); j < m; j++ {
 		val := new(arith.CurvePoint).ScalarBaseMult(arith.NewScalar(big.NewInt(j)))
-		gPow[string(val.Marshal())] = j
+		valBinary, err := val.MarshalBinary()
+		if err != nil {
+			return 0, err
+		}
+		gPow[string(valBinary)] = j
 	}
 	mNegG := new(arith.CurvePoint).ScalarBaseMult(arith.NewScalar(big.NewInt(-m)))
 	gamma := new(arith.CurvePoint).Set(target)
 	for i := int64(0); i < m; i++ {
-		j, ok := gPow[string(gamma.Marshal())]
+		gammaBinary, err := gamma.MarshalBinary()
+		if err != nil {
+			return 0, err
+		}
+		j, ok := gPow[string(gammaBinary)]
 		if ok {
 			result := i*m + j
-			return &result, nil
+			return result, nil
 		}
 		gamma.Add(gamma, mNegG)
 	}
-	return nil, errors.New("error during vote decryption")
+	return 0, errors.New("error during vote decryption")
 }
 
-func (vote *EncryptedVote) Marshal() []byte {
+func (vote *EncryptedVote) MarshalBinary() ([]byte, error) {
+	a, err := vote.a.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	b, err := vote.b.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
 	ret := make([]byte, 0, arith.NumBytesCurvePoint*2)
-	ret = append(ret, vote.a.Marshal()...)
-	ret = append(ret, vote.b.Marshal()...)
-	return ret
+	ret = append(ret, a...)
+	ret = append(ret, b...)
+	return ret, nil
 }
 
-func (vote *EncryptedVote) Unmarshal(m []byte) ([]byte, error) {
+func (vote *EncryptedVote) UnmarshalBinary(m []byte) error {
 	if len(m) < 2*arith.NumBytesCurvePoint {
-		return nil, errors.New("EncryptedVote: not enough data")
+		return errors.New("EncryptedVote: not enough data")
 	}
-	v := new(EncryptedVote)
-	m, err := v.a.Unmarshal(m)
+	err := vote.a.UnmarshalBinary(m)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	m, err = v.b.Unmarshal(m)
+	err = vote.b.UnmarshalBinary(m)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	*vote = *v
-	return m, nil
+	return nil
 }

@@ -14,7 +14,9 @@ type CurvePoint struct {
 }
 
 func newCurvePoint(p *bn256.G1) *CurvePoint {
-	return &CurvePoint{p: *p}
+	point := new(CurvePoint)
+	point.p.Set(p)
+	return point
 }
 
 func RandomCurvePoint(r io.Reader) (*Scalar, *CurvePoint, error) {
@@ -55,10 +57,11 @@ func (a *CurvePoint) Equal(b *CurvePoint) bool {
 	return bytes.Equal(a.p.Marshal(), b.p.Marshal())
 }
 
-func (a *CurvePoint) Marshal() []byte {
-	return a.p.Marshal()
+func (a *CurvePoint) MarshalBinary() ([]byte, error) {
+	return a.p.Marshal(), nil
 }
 
-func (a *CurvePoint) Unmarshal(m []byte) ([]byte, error) {
-	return a.p.Unmarshal(m)
+func (a *CurvePoint) UnmarshalBinary(m []byte) error {
+	_, err := a.p.Unmarshal(m)
+	return err
 }
