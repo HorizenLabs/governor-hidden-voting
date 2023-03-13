@@ -13,13 +13,13 @@ const numBytesProofVoteWellFormedness = 4*arith.NumBytesCurvePoint +
 	arith.NumBytesChallenge
 
 type ProofVoteWellFormedness struct {
-	a0 *arith.CurvePoint
-	a1 *arith.CurvePoint
-	b0 *arith.CurvePoint
-	b1 *arith.CurvePoint
-	r0 *arith.Scalar
-	r1 *arith.Scalar
-	c0 *arith.Challenge
+	a0 arith.CurvePoint
+	a1 arith.CurvePoint
+	b0 arith.CurvePoint
+	b1 arith.CurvePoint
+	r0 arith.Scalar
+	r1 arith.Scalar
+	c0 arith.Challenge
 }
 
 func ProveVoteWellFormedness(
@@ -32,10 +32,10 @@ func ProveVoteWellFormedness(
 	var b *arith.CurvePoint
 	switch vote {
 	case Yes:
-		b = encryptedVote.b
+		b = &encryptedVote.b
 	case No:
 		b = new(arith.CurvePoint).ScalarBaseMult(arith.NewScalar(big.NewInt(-1)))
-		b = new(arith.CurvePoint).Add(encryptedVote.b, b)
+		b = new(arith.CurvePoint).Add(&encryptedVote.b, b)
 	}
 	cCheat, err := arith.RandomChallenge(reader)
 	if err != nil {
@@ -48,7 +48,7 @@ func ProveVoteWellFormedness(
 	}
 
 	cCheatNegA := new(arith.CurvePoint).ScalarMult(
-		encryptedVote.a, new(arith.Scalar).Neg(cCheat.Scalar()))
+		&encryptedVote.a, new(arith.Scalar).Neg(cCheat.Scalar()))
 	aCheat := new(arith.CurvePoint).Add(rCheatG, cCheatNegA)
 
 	cCheatNegB := new(arith.CurvePoint).ScalarMult(
@@ -94,23 +94,23 @@ func ProveVoteWellFormedness(
 	switch vote {
 	case Yes:
 		proof = ProofVoteWellFormedness{
-			a0: aCheat,
-			a1: aHonest,
-			b0: bCheat,
-			b1: bHonest,
-			c0: cCheat,
-			r0: rCheat,
-			r1: rHonest,
+			a0: *aCheat,
+			a1: *aHonest,
+			b0: *bCheat,
+			b1: *bHonest,
+			c0: *cCheat,
+			r0: *rCheat,
+			r1: *rHonest,
 		}
 	case No:
 		proof = ProofVoteWellFormedness{
-			a0: aHonest,
-			a1: aCheat,
-			b0: bHonest,
-			b1: bCheat,
-			c0: cHonest,
-			r0: rHonest,
-			r1: rCheat,
+			a0: *aHonest,
+			a1: *aCheat,
+			b0: *bHonest,
+			b1: *bCheat,
+			c0: *cHonest,
+			r0: *rHonest,
+			r1: *rCheat,
 		}
 	}
 	return &proof, nil
@@ -134,34 +134,34 @@ func VerifyVoteWellFormedness(
 		proof.a1.Marshal(),
 		proof.b1.Marshal(),
 	)
-	c1 := new(arith.Challenge).Sub(c, proof.c0)
+	c1 := new(arith.Challenge).Sub(c, &proof.c0)
 
-	r0G := new(arith.CurvePoint).ScalarBaseMult(proof.r0)
-	c0A := new(arith.CurvePoint).ScalarMult(vote.a, proof.c0.Scalar())
-	a0PlusC0A := new(arith.CurvePoint).Add(proof.a0, c0A)
+	r0G := new(arith.CurvePoint).ScalarBaseMult(&proof.r0)
+	c0A := new(arith.CurvePoint).ScalarMult(&vote.a, proof.c0.Scalar())
+	a0PlusC0A := new(arith.CurvePoint).Add(&proof.a0, c0A)
 	if !r0G.Equal(a0PlusC0A) {
 		return errors.New("vote well-formedness proof verification failed, first check")
 	}
 
-	r1G := new(arith.CurvePoint).ScalarBaseMult(proof.r1)
-	c1A := new(arith.CurvePoint).ScalarMult(vote.a, c1.Scalar())
-	a1PlusC1A := new(arith.CurvePoint).Add(proof.a1, c1A)
+	r1G := new(arith.CurvePoint).ScalarBaseMult(&proof.r1)
+	c1A := new(arith.CurvePoint).ScalarMult(&vote.a, c1.Scalar())
+	a1PlusC1A := new(arith.CurvePoint).Add(&proof.a1, c1A)
 	if !r1G.Equal(a1PlusC1A) {
 		return errors.New("vote well-formedness proof verification failed, second check")
 	}
 
-	r0Pk := new(arith.CurvePoint).ScalarMult(pk, proof.r0)
-	c0B := new(arith.CurvePoint).ScalarMult(vote.b, proof.c0.Scalar())
-	b0PlusC0B := new(arith.CurvePoint).Add(proof.b0, c0B)
+	r0Pk := new(arith.CurvePoint).ScalarMult(pk, &proof.r0)
+	c0B := new(arith.CurvePoint).ScalarMult(&vote.b, proof.c0.Scalar())
+	b0PlusC0B := new(arith.CurvePoint).Add(&proof.b0, c0B)
 	if !r0Pk.Equal(b0PlusC0B) {
 		return errors.New("vote well-formedness proof verification failed, third check")
 	}
 
-	r1Pk := new(arith.CurvePoint).ScalarMult(pk, proof.r1)
+	r1Pk := new(arith.CurvePoint).ScalarMult(pk, &proof.r1)
 	gNeg := new(arith.CurvePoint).ScalarBaseMult(arith.NewScalar(big.NewInt(-1)))
-	bMinusG := new(arith.CurvePoint).Add(vote.b, gNeg)
+	bMinusG := new(arith.CurvePoint).Add(&vote.b, gNeg)
 	c1BMinusG := new(arith.CurvePoint).ScalarMult(bMinusG, c1.Scalar())
-	b1PlusC1BMinusG := new(arith.CurvePoint).Add(proof.b1, c1BMinusG)
+	b1PlusC1BMinusG := new(arith.CurvePoint).Add(&proof.b1, c1BMinusG)
 
 	if !r1Pk.Equal(b1PlusC1BMinusG) {
 		return errors.New("vote well-formedness proof verification failed, fourth check")
@@ -187,51 +187,30 @@ func (proof *ProofVoteWellFormedness) Unmarshal(m []byte) ([]byte, error) {
 	}
 	var err error
 
-	if proof.a0 == nil {
-		proof.a0 = &arith.CurvePoint{}
-	}
 	if m, err = proof.a0.Unmarshal(m); err != nil {
 		return nil, err
 	}
 
-	if proof.a1 == nil {
-		proof.a1 = &arith.CurvePoint{}
-	}
 	if m, err = proof.a1.Unmarshal(m); err != nil {
 		return nil, err
 	}
 
-	if proof.b0 == nil {
-		proof.b0 = &arith.CurvePoint{}
-	}
 	if m, err = proof.b0.Unmarshal(m); err != nil {
 		return nil, err
 	}
 
-	if proof.b1 == nil {
-		proof.b1 = &arith.CurvePoint{}
-	}
 	if m, err = proof.b1.Unmarshal(m); err != nil {
 		return nil, err
 	}
 
-	if proof.r0 == nil {
-		proof.r0 = &arith.Scalar{}
-	}
 	if m, err = proof.r0.Unmarshal(m); err != nil {
 		return nil, err
 	}
 
-	if proof.r1 == nil {
-		proof.r1 = &arith.Scalar{}
-	}
 	if m, err = proof.r1.Unmarshal(m); err != nil {
 		return nil, err
 	}
 
-	if proof.c0 == nil {
-		proof.c0 = &arith.Challenge{}
-	}
 	if m, err = proof.c0.Unmarshal(m); err != nil {
 		return nil, err
 	}

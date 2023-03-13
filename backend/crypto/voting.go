@@ -17,8 +17,8 @@ const (
 )
 
 type EncryptedVote struct {
-	a *arith.CurvePoint
-	b *arith.CurvePoint
+	a arith.CurvePoint
+	b arith.CurvePoint
 }
 
 func (vote Vote) curvePoint() *arith.CurvePoint {
@@ -33,26 +33,14 @@ func (vote Vote) curvePoint() *arith.CurvePoint {
 }
 
 func (e *EncryptedVote) Set(v *EncryptedVote) *EncryptedVote {
-	if e.a == nil {
-		e.a = &arith.CurvePoint{}
-	}
-	e.a.Set(v.a)
-	if e.b == nil {
-		e.b = &arith.CurvePoint{}
-	}
-	e.b.Set(v.b)
+	e.a.Set(&v.a)
+	e.b.Set(&v.b)
 	return e
 }
 
 func (e *EncryptedVote) Add(a, b *EncryptedVote) *EncryptedVote {
-	if e.a == nil {
-		e.a = &arith.CurvePoint{}
-	}
-	e.a.Add(a.a, b.a)
-	if e.b == nil {
-		e.b = &arith.CurvePoint{}
-	}
-	e.b.Add(a.b, b.b)
+	e.a.Add(&a.a, &b.a)
+	e.b.Add(&a.b, &b.b)
 	return e
 }
 
@@ -63,13 +51,13 @@ func (vote Vote) Encrypt(reader io.Reader, pk *arith.CurvePoint) (*EncryptedVote
 	}
 	b := new(arith.CurvePoint).ScalarMult(pk, r)
 	b = new(arith.CurvePoint).Add(b, vote.curvePoint())
-	return &EncryptedVote{a: a, b: b}, r, nil
+	return &EncryptedVote{a: *a, b: *b}, r, nil
 }
 
 func (vote *EncryptedVote) Decrypt(sk *arith.Scalar, n int64) (*int64, error) {
 	// Decrypt the vote using baby-step giant-step algorithm
-	target := new(arith.CurvePoint).ScalarMult(vote.a, new(arith.Scalar).Neg(sk))
-	target = new(arith.CurvePoint).Add(target, vote.b)
+	target := new(arith.CurvePoint).ScalarMult(&vote.a, new(arith.Scalar).Neg(sk))
+	target = new(arith.CurvePoint).Add(target, &vote.b)
 	m := int64(math.Ceil(math.Sqrt(float64(n + 1))))
 	gPow := make(map[string]int64)
 	for j := int64(0); j < m; j++ {

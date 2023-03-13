@@ -12,9 +12,9 @@ const numBytesProofCorrectDecryption = 2*arith.NumBytesCurvePoint +
 	arith.NumBytesScalar
 
 type ProofCorrectDecryption struct {
-	u *arith.CurvePoint
-	v *arith.CurvePoint
-	s *arith.Scalar
+	u arith.CurvePoint
+	v arith.CurvePoint
+	s arith.Scalar
 }
 
 func ProveCorrectDecryption(
@@ -25,7 +25,7 @@ func ProveCorrectDecryption(
 	if err != nil {
 		return nil, err
 	}
-	u := new(arith.CurvePoint).ScalarMult(tally.votes.a, r)
+	u := new(arith.CurvePoint).ScalarMult(&tally.votes.a, r)
 	c := arith.FiatShamirChallenge(
 		keyPair.Pk().Marshal(),
 		tally.votes.a.Marshal(),
@@ -34,7 +34,7 @@ func ProveCorrectDecryption(
 		v.Marshal())
 	s := new(arith.Scalar).Mul(c.Scalar(), keyPair.Sk())
 	s = new(arith.Scalar).Add(r, s)
-	return &ProofCorrectDecryption{u: u, v: v, s: s}, nil
+	return &ProofCorrectDecryption{u: *u, v: *v, s: *s}, nil
 }
 
 func VerifyCorrectDecryption(
@@ -55,17 +55,17 @@ func VerifyCorrectDecryption(
 		proof.v.Marshal())
 
 	d := new(arith.CurvePoint).ScalarBaseMult(arith.NewScalar(big.NewInt(-result)))
-	d = new(arith.CurvePoint).Add(d, tally.votes.b)
-	sA := new(arith.CurvePoint).ScalarMult(tally.votes.a, proof.s)
+	d = new(arith.CurvePoint).Add(d, &tally.votes.b)
+	sA := new(arith.CurvePoint).ScalarMult(&tally.votes.a, &proof.s)
 	cD := new(arith.CurvePoint).ScalarMult(d, c.Scalar())
-	uPlusCD := new(arith.CurvePoint).Add(proof.u, cD)
+	uPlusCD := new(arith.CurvePoint).Add(&proof.u, cD)
 	if !sA.Equal(uPlusCD) {
 		return errors.New("decryption proof verification failed, first check")
 	}
 
-	sG := new(arith.CurvePoint).ScalarBaseMult(proof.s)
+	sG := new(arith.CurvePoint).ScalarBaseMult(&proof.s)
 	cPk := new(arith.CurvePoint).ScalarMult(pk, c.Scalar())
-	vPlusCPk := new(arith.CurvePoint).Add(proof.v, cPk)
+	vPlusCPk := new(arith.CurvePoint).Add(&proof.v, cPk)
 	if !sG.Equal(vPlusCPk) {
 		return errors.New("decryption proof verification failed, second check")
 	}
@@ -86,23 +86,14 @@ func (proof *ProofCorrectDecryption) Unmarshal(m []byte) ([]byte, error) {
 	}
 	var err error
 
-	if proof.u == nil {
-		proof.u = &arith.CurvePoint{}
-	}
 	if m, err = proof.u.Unmarshal(m); err != nil {
 		return nil, err
 	}
 
-	if proof.v == nil {
-		proof.v = &arith.CurvePoint{}
-	}
 	if m, err = proof.v.Unmarshal(m); err != nil {
 		return nil, err
 	}
 
-	if proof.s == nil {
-		proof.s = &arith.Scalar{}
-	}
 	if m, err = proof.s.Unmarshal(m); err != nil {
 		return nil, err
 	}
