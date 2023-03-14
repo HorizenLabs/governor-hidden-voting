@@ -9,6 +9,8 @@ import (
 	"github.com/HorizenLabs/e-voting-poc/backend/arith"
 )
 
+// ProofVoteWellFormedness is a cryptographic proof that an encrypted
+// vote is well-formed, i.e. it encodes a 0 (No) or a 1 (Yes).
 type ProofVoteWellFormedness struct {
 	A0 arith.CurvePoint
 	A1 arith.CurvePoint
@@ -19,12 +21,19 @@ type ProofVoteWellFormedness struct {
 	C0 arith.Challenge
 }
 
+// ProveVoteWellFormedness generates a proof of well-formedness of an encrypted vote.
+// In order to obtain a valid proof, the parameters should be obtained in the following
+// way:
+//
+//	encryptedVote, r, err := vote.Encrypt(rand.Reader, pk)
 func ProveVoteWellFormedness(
 	reader io.Reader,
 	encryptedVote *EncryptedVote,
 	vote Vote,
 	r *arith.Scalar,
 	pk *arith.CurvePoint) (*ProofVoteWellFormedness, error) {
+	// Implementation based on https://eprint.iacr.org/2016/765.pdf, section 4.5
+
 	// Generate cheating proof for the unchosen alternative
 	var b *arith.CurvePoint
 	switch vote {
@@ -138,10 +147,12 @@ func ProveVoteWellFormedness(
 	return proof, nil
 }
 
+// VerifyVoteWellFormedness verifies a proof of well-formedness of an encrypted vote.
 func VerifyVoteWellFormedness(
 	proof *ProofVoteWellFormedness,
 	vote *EncryptedVote,
 	pk *arith.CurvePoint) error {
+	// Implementation based on https://eprint.iacr.org/2016/765.pdf, section 4.5
 
 	m, err := json.Marshal(proof)
 	if err != nil {

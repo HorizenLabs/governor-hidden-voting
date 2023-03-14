@@ -9,13 +9,16 @@ import (
 	"github.com/HorizenLabs/e-voting-poc/backend/arith"
 )
 
+// ProofCorrectDecryption is a cryptographic proof of correct decryption of an election tally
 type ProofCorrectDecryption struct {
 	U arith.CurvePoint
 	V arith.CurvePoint
 	S arith.Scalar
 }
 
+// ProveCorrectDecryption generates a proof of correct decryption of tally.
 func ProveCorrectDecryption(
+	// Implementation based on https://eprint.iacr.org/2016/765.pdf, section 4.4
 	reader io.Reader,
 	tally *EncryptedTally,
 	keyPair *KeyPair) (*ProofCorrectDecryption, error) {
@@ -62,7 +65,10 @@ func ProveCorrectDecryption(
 	return proof, nil
 }
 
+// VerifyCorrectDecryption verifies a proof of correct tally decryption.
+// Parameter result is the total number of Yes votes
 func VerifyCorrectDecryption(
+	// Implementation based on https://eprint.iacr.org/2016/765.pdf, section 4.4
 	proof *ProofCorrectDecryption,
 	tally *EncryptedTally,
 	result int64,

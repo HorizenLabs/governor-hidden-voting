@@ -16,6 +16,10 @@ const (
 	Yes
 )
 
+// EncryptedVote represents a vote encrypted with EC-ElGamal.
+// Thanks to the linear homomorphic properties of ElGamal encryption,
+// it can represent both a single 0-1 vote and the sum of an arbitrary number
+// of such votes.
 type EncryptedVote struct {
 	A arith.CurvePoint
 	B arith.CurvePoint
@@ -32,18 +36,23 @@ func (vote Vote) curvePoint() *arith.CurvePoint {
 	return new(arith.CurvePoint).ScalarBaseMult(scalar)
 }
 
+// Set sets the receiver to v and returns it.
 func (e *EncryptedVote) Set(v *EncryptedVote) *EncryptedVote {
 	e.A.Set(&v.A)
 	e.B.Set(&v.B)
 	return e
 }
 
+// Add sets the receiver to the sum of a and b and returns it.
 func (e *EncryptedVote) Add(a, b *EncryptedVote) *EncryptedVote {
 	e.A.Add(&a.A, &b.A)
 	e.B.Add(&a.B, &b.B)
 	return e
 }
 
+// Encrypt encrypts a vote and returns the encrypted vote and the secret
+// random scalar used for ElGamal encryption. This scalar is useful for
+// generating a proof of vote well-formedness with function ProveVoteWellFormedness.
 func (vote Vote) Encrypt(reader io.Reader, pk *arith.CurvePoint) (*EncryptedVote, *arith.Scalar, error) {
 	r, a, err := arith.RandomCurvePoint(reader)
 	if err != nil {
@@ -57,6 +66,11 @@ func (vote Vote) Encrypt(reader io.Reader, pk *arith.CurvePoint) (*EncryptedVote
 	return encryptedVote, r, nil
 }
 
+// Decrypt decrypts an encrypted vote and returns the result.
+// Parameter n should be an upper bound on the result.
+//
+// If the encrypted vote has been obtained by summing a number m 0-1 votes,
+// then m can be used as upper bound.
 func (vote *EncryptedVote) Decrypt(sk *arith.Scalar, n int64) (int64, error) {
 	// Decrypt the vote using baby-step giant-step algorithm
 	target := new(arith.CurvePoint).ScalarMult(&vote.A, new(arith.Scalar).Neg(sk))

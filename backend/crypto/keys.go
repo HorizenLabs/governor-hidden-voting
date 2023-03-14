@@ -6,11 +6,13 @@ import (
 	"github.com/HorizenLabs/e-voting-poc/backend/arith"
 )
 
+// KeyPair is an election authority key-pair for ElGamal encryption of votes.
 type KeyPair struct {
-	Pk arith.CurvePoint
-	Sk arith.Scalar
+	Pk arith.CurvePoint // public key
+	Sk arith.Scalar     // secret key
 }
 
+// NewKeyPair allocates and initializes a new valid ElGamal KeyPair.
 func NewKeyPair(r io.Reader) (*KeyPair, error) {
 	sk, pk, err := arith.RandomCurvePoint(r)
 	if err != nil {

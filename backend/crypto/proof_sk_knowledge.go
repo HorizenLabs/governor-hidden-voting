@@ -8,12 +8,15 @@ import (
 	"github.com/HorizenLabs/e-voting-poc/backend/arith"
 )
 
+// ProofSkKnowledge is a cryptographic proof of knowledge of the secret key of an ElGamal KeyPair
 type ProofSkKnowledge struct {
 	B arith.CurvePoint
 	D arith.Scalar
 }
 
+// ProveSkKnowledge generates a proof of knowledge of the secret key of an ElGamal KeyPair
 func ProveSkKnowledge(reader io.Reader, keyPair *KeyPair) (*ProofSkKnowledge, error) {
+	// Implementation based on https://eprint.iacr.org/2016/765.pdf, section 4.3
 	r, b, err := arith.RandomCurvePoint(reader)
 	if err != nil {
 		return nil, err
@@ -35,7 +38,9 @@ func ProveSkKnowledge(reader io.Reader, keyPair *KeyPair) (*ProofSkKnowledge, er
 	return proof, nil
 }
 
+// VerifySkKnowledge verifies a proof of knowledge of the secret key of an ElGamal KeyPair
 func VerifySkKnowledge(proof *ProofSkKnowledge, pk *arith.CurvePoint) error {
+	// Implementation based on https://eprint.iacr.org/2016/765.pdf, section 4.3
 	m, err := json.Marshal(proof)
 	if err != nil {
 		return err
