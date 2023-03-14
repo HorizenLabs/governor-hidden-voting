@@ -23,6 +23,9 @@ func newCurvePoint(p *bn256.G1) *CurvePoint {
 
 func RandomCurvePoint(r io.Reader) (*Scalar, *CurvePoint, error) {
 	k, p, err := bn256.RandomG1(r)
+	if err != nil {
+	    return nil, nil, err
+	}
 	return NewScalar(k), newCurvePoint(p), err
 }
 
