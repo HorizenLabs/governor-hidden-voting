@@ -1,6 +1,8 @@
 package crypto
 
 import (
+	"math/big"
+
 	"github.com/HorizenLabs/e-voting-poc/backend/arith"
 )
 
@@ -14,8 +16,12 @@ type EncryptedTally struct {
 	Count int64
 }
 
+// NewEncryptedTally allocates and returns an EncryptedTally encoding zero votes.
 func NewEncryptedTally() *EncryptedTally {
 	tally := new(EncryptedTally)
+	zero := new(arith.CurvePoint).ScalarBaseMult(arith.NewScalar(big.NewInt(0)))
+	tally.Votes.A.Set(zero)
+	tally.Votes.B.Set(zero)
 	tally.Count = 0
 	return tally
 }
@@ -25,11 +31,7 @@ func (tally *Tally) NumVoters() int64 {
 }
 
 func (tally *EncryptedTally) Add(vote *EncryptedVote) *EncryptedTally {
-	if tally.Count == 0 {
-		tally.Votes.Set(vote)
-	} else {
-		tally.Votes.Add(&tally.Votes, vote)
-	}
+	tally.Votes.Add(&tally.Votes, vote)
 	tally.Count++
 	return tally
 }
