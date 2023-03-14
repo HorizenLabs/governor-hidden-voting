@@ -30,6 +30,9 @@ func FiatShamirChallenge(data ...[]byte) *Challenge {
 
 func RandomChallenge(reader io.Reader) (*Challenge, error) {
 	val, err := rand.Int(reader, challengeModulus())
+        if err != nil {
+            return nil, err
+        }
 	challenge := new(Challenge)
 	challenge.val.Set(val)
 	return challenge, err
