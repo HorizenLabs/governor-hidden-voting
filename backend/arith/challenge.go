@@ -40,7 +40,7 @@ func RandomChallenge(reader io.Reader) (*Challenge, error) {
 
 func challengeModulus() *big.Int {
 	// We employ 128 bits challenges
-	return new(big.Int).Exp(big.NewInt(2), big.NewInt(128), nil)
+	return new(big.Int).Lsh(big.NewInt(1), 128)
 }
 
 func (c *Challenge) Scalar() *Scalar {
