@@ -25,6 +25,14 @@ type EncryptedVote struct {
 	B arith.CurvePoint
 }
 
+func NewEncryptedVote() *EncryptedVote {
+	vote := new(EncryptedVote)
+	zero := new(arith.CurvePoint).ScalarBaseMult(arith.NewScalar(big.NewInt(0)))
+	vote.A.Set(zero)
+	vote.B.Set(zero)
+	return vote
+}
+
 func (vote Vote) curvePoint() *arith.CurvePoint {
 	scalar := arith.NewScalar(big.NewInt(int64(vote)))
 	return new(arith.CurvePoint).ScalarBaseMult(scalar)
