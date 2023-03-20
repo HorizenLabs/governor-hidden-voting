@@ -53,14 +53,19 @@ func (e *Challenge) Set(a *Challenge) *Challenge {
 }
 
 func (e *Challenge) Add(a, b *Challenge) *Challenge {
-	e.val.Set(new(big.Int).Add(&a.val, &b.val))
-	e.val.Mod(&e.val, challengeModulus())
+	c := new(big.Int).Add(&a.val, &b.val)
+	if c.Cmp(challengeModulus()) > 0 {
+		c.Sub(c, challengeModulus())
+	}
+	e.val.Set(c)
 	return e
 }
 
 func (e *Challenge) Sub(a, b *Challenge) *Challenge {
 	e.val.Set(new(big.Int).Sub(&a.val, &b.val))
-	e.val.Mod(&e.val, challengeModulus())
+	if b.val.Cmp(&a.val) > 0 {
+		e.val.Add(&e.val, challengeModulus())
+	}
 	return e
 }
 

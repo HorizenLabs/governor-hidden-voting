@@ -31,8 +31,11 @@ func (e *Scalar) Set(a *Scalar) *Scalar {
 }
 
 func (e *Scalar) Add(a, b *Scalar) *Scalar {
-	e.val.Add(&a.val, &b.val)
-	e.val.Mod(&e.val, bn256.Order)
+	c := new(big.Int).Add(&a.val, &b.val)
+	if c.Cmp(bn256.Order) > 0 {
+		c.Sub(c, bn256.Order)
+	}
+	e.val.Set(c)
 	return e
 }
 
