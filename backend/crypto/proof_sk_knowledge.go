@@ -10,8 +10,8 @@ import (
 
 // ProofSkKnowledge is a cryptographic proof of knowledge of the secret key of an ElGamal KeyPair
 type ProofSkKnowledge struct {
-	B arith.CurvePoint
 	D arith.Scalar
+	C arith.Challenge
 }
 
 // ProveSkKnowledge generates a proof of knowledge of the secret key of an ElGamal KeyPair
@@ -33,8 +33,8 @@ func ProveSkKnowledge(reader io.Reader, keyPair *KeyPair) (*ProofSkKnowledge, er
 	d := new(arith.Scalar).Mul(c.Scalar(), &keyPair.Sk)
 	d = new(arith.Scalar).Add(r, d)
 	proof := new(ProofSkKnowledge)
-	proof.B.Set(b)
 	proof.D.Set(d)
+	proof.C.Set(c)
 	return proof, nil
 }
 
@@ -51,20 +51,27 @@ func VerifySkKnowledge(proof *ProofSkKnowledge, pk *arith.CurvePoint) error {
 		return err
 	}
 
+	cPk := new(arith.CurvePoint).ScalarMult(pk, proof.C.Scalar())
+	b := new(arith.CurvePoint).ScalarBaseMult(&proof.D)
+	b.Add(b, new(arith.CurvePoint).Neg(cPk))
+
 	bytesPk, err := pk.MarshalBinary()
 	if err != nil {
 		return err
 	}
-	bytesB, err := proof.B.MarshalBinary()
+	bytesB, err := b.MarshalBinary()
 	if err != nil {
 		return err
 	}
 	c := arith.FiatShamirChallenge(bytesPk, bytesB)
-	cPk := new(arith.CurvePoint).ScalarMult(pk, c.Scalar())
-	bPlusCPk := new(arith.CurvePoint).Add(&proof.B, cPk)
+	if !c.Equal(&proof.C) {
+		return errors.New("sk knowledge proof verification failed, first check")
+	}
+
+	bPlusCPk := new(arith.CurvePoint).Add(b, cPk)
 	phi := new(arith.CurvePoint).ScalarBaseMult(&proof.D)
 	if !phi.Equal(bPlusCPk) {
-		return errors.New("sk knowledge proof verification failed")
+		return errors.New("sk knowledge proof verification failed, second check")
 	}
 	return nil
 }
