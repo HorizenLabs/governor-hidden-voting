@@ -11,18 +11,16 @@ import (
 
 // ProofCorrectDecryption is a cryptographic proof of correct decryption of an election tally
 type ProofCorrectDecryption struct {
-	U arith.CurvePoint
-	V arith.CurvePoint
 	S arith.Scalar
+	C arith.Challenge
 }
 
 // ProveCorrectDecryption generates a proof of correct decryption of tally.
 func ProveCorrectDecryption(
-	// Implementation based on https://eprint.iacr.org/2016/765.pdf, section 4.4
 	reader io.Reader,
 	tally *EncryptedTally,
 	keyPair *KeyPair) (*ProofCorrectDecryption, error) {
-
+	// Implementation based on https://eprint.iacr.org/2016/765.pdf, section 4.4
 	r, v, err := arith.RandomCurvePoint(reader)
 	if err != nil {
 		return nil, err
@@ -59,21 +57,19 @@ func ProveCorrectDecryption(
 	s := new(arith.Scalar).Mul(c.Scalar(), &keyPair.Sk)
 	s = new(arith.Scalar).Add(r, s)
 	proof := new(ProofCorrectDecryption)
-	proof.U.Set(u)
-	proof.V.Set(v)
 	proof.S.Set(s)
+	proof.C.Set(c)
 	return proof, nil
 }
 
 // VerifyCorrectDecryption verifies a proof of correct tally decryption.
 // Parameter result is the total number of Yes votes
 func VerifyCorrectDecryption(
-	// Implementation based on https://eprint.iacr.org/2016/765.pdf, section 4.4
 	proof *ProofCorrectDecryption,
 	tally *EncryptedTally,
 	result int64,
 	pk *arith.CurvePoint) error {
-
+	// Implementation based on https://eprint.iacr.org/2016/765.pdf, section 4.4
 	m, err := json.Marshal(proof)
 	if err != nil {
 		return err
@@ -83,6 +79,16 @@ func VerifyCorrectDecryption(
 	if err != nil {
 		return err
 	}
+
+	d := new(arith.CurvePoint).ScalarBaseMult(arith.NewScalar(big.NewInt(-result)))
+	d = new(arith.CurvePoint).Add(d, &tally.Votes.B)
+	sA := new(arith.CurvePoint).ScalarMult(&tally.Votes.A, &proof.S)
+	cD := new(arith.CurvePoint).ScalarMult(d, proof.C.Scalar())
+	u := new(arith.CurvePoint).Add(sA, new(arith.CurvePoint).Neg(cD))
+
+	sG := new(arith.CurvePoint).ScalarBaseMult(&proof.S)
+	cPk := new(arith.CurvePoint).ScalarMult(pk, proof.C.Scalar())
+	v := new(arith.CurvePoint).Add(sG, new(arith.CurvePoint).Neg(cPk))
 
 	bytesPk, err := pk.MarshalBinary()
 	if err != nil {
@@ -96,11 +102,11 @@ func VerifyCorrectDecryption(
 	if err != nil {
 		return err
 	}
-	bytesU, err := proof.U.MarshalBinary()
+	bytesU, err := u.MarshalBinary()
 	if err != nil {
 		return err
 	}
-	bytesV, err := proof.V.MarshalBinary()
+	bytesV, err := v.MarshalBinary()
 	if err != nil {
 		return err
 	}
@@ -110,20 +116,9 @@ func VerifyCorrectDecryption(
 		bytesB,
 		bytesU,
 		bytesV)
-	d := new(arith.CurvePoint).ScalarBaseMult(arith.NewScalar(big.NewInt(-result)))
-	d = new(arith.CurvePoint).Add(d, &tally.Votes.B)
-	sA := new(arith.CurvePoint).ScalarMult(&tally.Votes.A, &proof.S)
-	cD := new(arith.CurvePoint).ScalarMult(d, c.Scalar())
-	uPlusCD := new(arith.CurvePoint).Add(&proof.U, cD)
-	if !sA.Equal(uPlusCD) {
-		return errors.New("decryption proof verification failed, first check")
-	}
 
-	sG := new(arith.CurvePoint).ScalarBaseMult(&proof.S)
-	cPk := new(arith.CurvePoint).ScalarMult(pk, c.Scalar())
-	vPlusCPk := new(arith.CurvePoint).Add(&proof.V, cPk)
-	if !sG.Equal(vPlusCPk) {
-		return errors.New("decryption proof verification failed, second check")
+	if !c.Equal(&proof.C) {
+		return errors.New("decryption proof verification failed")
 	}
 	return nil
 }
