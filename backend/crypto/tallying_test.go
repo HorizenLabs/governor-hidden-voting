@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"errors"
 	"io"
+	mathrand "math/rand"
 	"testing"
 
 	"github.com/HorizenLabs/e-voting-poc/backend/arith"
@@ -26,7 +27,11 @@ func TestTallying(t *testing.T) {
 				t.Fatal(err)
 			}
 			if tc.numYes != tally.NumYes {
-				t.Fatalf("expected: %d, got: %d", tc.numYes, tally.NumYes)
+				t.Fatalf("expected: %d yes, got: %d", tc.numYes, tally.NumYes)
+			}
+			numNo := tc.numVoters - tc.numYes
+			if numNo != tally.NumNo {
+				t.Fatalf("expected %d no, got: %d", numNo, tally.NumNo)
 			}
 		})
 	}
@@ -66,9 +71,10 @@ func generateEncryptedTally(
 		t.Fatal(errors.New("numYes cannot be greater than numVoters"))
 	}
 	tally := NewEncryptedTally()
-	for i := int64(0); i < numVoters; i++ {
+	perm := mathrand.Perm(int(numVoters))
+	for _, i := range perm {
 		var vote Vote
-		if i < numYes {
+		if int64(i) < numYes {
 			vote = Yes
 		} else {
 			vote = No
