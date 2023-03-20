@@ -12,13 +12,10 @@ import (
 // ProofVoteWellFormedness is a cryptographic proof that an encrypted
 // vote is well-formed, i.e. it encodes a 0 (No) or a 1 (Yes).
 type ProofVoteWellFormedness struct {
-	A0 arith.CurvePoint
-	A1 arith.CurvePoint
-	B0 arith.CurvePoint
-	B1 arith.CurvePoint
 	R0 arith.Scalar
 	R1 arith.Scalar
 	C0 arith.Challenge
+	C1 arith.Challenge
 }
 
 // ProveVoteWellFormedness generates a proof of well-formedness of an encrypted vote.
@@ -130,21 +127,15 @@ func ProveVoteWellFormedness(
 	proof := new(ProofVoteWellFormedness)
 	switch vote {
 	case Yes:
-		proof.A0.Set(aCheat)
-		proof.A1.Set(aHonest)
-		proof.B0.Set(bCheat)
-		proof.B1.Set(bHonest)
-		proof.C0.Set(cCheat)
 		proof.R0.Set(rCheat)
 		proof.R1.Set(rHonest)
+		proof.C0.Set(cCheat)
+		proof.C1.Set(cHonest)
 	case No:
-		proof.A0.Set(aHonest)
-		proof.A1.Set(aCheat)
-		proof.B0.Set(bHonest)
-		proof.B1.Set(bCheat)
-		proof.C0.Set(cHonest)
 		proof.R0.Set(rHonest)
 		proof.R1.Set(rCheat)
+		proof.C0.Set(cHonest)
+		proof.C1.Set(cCheat)
 	}
 	return proof, nil
 }
@@ -166,6 +157,24 @@ func VerifyVoteWellFormedness(
 		return err
 	}
 
+	r0G := new(arith.CurvePoint).ScalarBaseMult(&proof.R0)
+	c0A := new(arith.CurvePoint).ScalarMult(&vote.A, proof.C0.Scalar())
+	a0 := new(arith.CurvePoint).Add(r0G, new(arith.CurvePoint).Neg(c0A))
+
+	r1G := new(arith.CurvePoint).ScalarBaseMult(&proof.R1)
+	c1A := new(arith.CurvePoint).ScalarMult(&vote.A, proof.C1.Scalar())
+	a1 := new(arith.CurvePoint).Add(r1G, new(arith.CurvePoint).Neg(c1A))
+
+	r0Pk := new(arith.CurvePoint).ScalarMult(pk, &proof.R0)
+	c0B := new(arith.CurvePoint).ScalarMult(&vote.B, proof.C0.Scalar())
+	b0 := new(arith.CurvePoint).Add(r0Pk, new(arith.CurvePoint).Neg(c0B))
+
+	r1Pk := new(arith.CurvePoint).ScalarMult(pk, &proof.R1)
+	gNeg := new(arith.CurvePoint).ScalarBaseMult(arith.NewScalar(big.NewInt(-1)))
+	bMinusG := new(arith.CurvePoint).Add(&vote.B, gNeg)
+	c1BMinusG := new(arith.CurvePoint).ScalarMult(bMinusG, proof.C1.Scalar())
+	b1 := new(arith.CurvePoint).Add(r1Pk, new(arith.CurvePoint).Neg(c1BMinusG))
+
 	bytesPk, err := pk.MarshalBinary()
 	if err != nil {
 		return err
@@ -178,19 +187,19 @@ func VerifyVoteWellFormedness(
 	if err != nil {
 		return err
 	}
-	bytesA0, err := proof.A0.MarshalBinary()
+	bytesA0, err := a0.MarshalBinary()
 	if err != nil {
 		return err
 	}
-	bytesB0, err := proof.B0.MarshalBinary()
+	bytesB0, err := b0.MarshalBinary()
 	if err != nil {
 		return err
 	}
-	bytesA1, err := proof.A1.MarshalBinary()
+	bytesA1, err := a1.MarshalBinary()
 	if err != nil {
 		return err
 	}
-	bytesB1, err := proof.B1.MarshalBinary()
+	bytesB1, err := b1.MarshalBinary()
 	if err != nil {
 		return err
 	}
@@ -204,37 +213,9 @@ func VerifyVoteWellFormedness(
 		bytesA1,
 		bytesB1,
 	)
-	c1 := new(arith.Challenge).Sub(c, &proof.C0)
 
-	r0G := new(arith.CurvePoint).ScalarBaseMult(&proof.R0)
-	c0A := new(arith.CurvePoint).ScalarMult(&vote.A, proof.C0.Scalar())
-	a0PlusC0A := new(arith.CurvePoint).Add(&proof.A0, c0A)
-	if !r0G.Equal(a0PlusC0A) {
-		return errors.New("vote well-formedness proof verification failed, first check")
-	}
-
-	r1G := new(arith.CurvePoint).ScalarBaseMult(&proof.R1)
-	c1A := new(arith.CurvePoint).ScalarMult(&vote.A, c1.Scalar())
-	a1PlusC1A := new(arith.CurvePoint).Add(&proof.A1, c1A)
-	if !r1G.Equal(a1PlusC1A) {
-		return errors.New("vote well-formedness proof verification failed, second check")
-	}
-
-	r0Pk := new(arith.CurvePoint).ScalarMult(pk, &proof.R0)
-	c0B := new(arith.CurvePoint).ScalarMult(&vote.B, proof.C0.Scalar())
-	b0PlusC0B := new(arith.CurvePoint).Add(&proof.B0, c0B)
-	if !r0Pk.Equal(b0PlusC0B) {
-		return errors.New("vote well-formedness proof verification failed, third check")
-	}
-
-	r1Pk := new(arith.CurvePoint).ScalarMult(pk, &proof.R1)
-	gNeg := new(arith.CurvePoint).ScalarBaseMult(arith.NewScalar(big.NewInt(-1)))
-	bMinusG := new(arith.CurvePoint).Add(&vote.B, gNeg)
-	c1BMinusG := new(arith.CurvePoint).ScalarMult(bMinusG, c1.Scalar())
-	b1PlusC1BMinusG := new(arith.CurvePoint).Add(&proof.B1, c1BMinusG)
-
-	if !r1Pk.Equal(b1PlusC1BMinusG) {
-		return errors.New("vote well-formedness proof verification failed, fourth check")
+	if !c.Equal(new(arith.Challenge).Add(&proof.C0, &proof.C1)) {
+		return errors.New("vote well-formedness proof verification failed")
 	}
 	return nil
 }
