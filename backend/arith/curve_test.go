@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestUnmarshalInvalidCurvePoint(t *testing.T) {
+func TestUnmarshalCurvePoint(t *testing.T) {
 	_, p, err := RandomCurvePoint(rand.Reader)
 	if err != nil {
 		t.Fatal(err)
@@ -24,7 +24,7 @@ func TestUnmarshalInvalidCurvePoint(t *testing.T) {
 	mOutsideY[48] = mOutsideY[48] + 1
 
 	tests := map[string]struct {
-		m    []byte
+		m          []byte
 		shouldPass bool
 	}{
 		"correct":               {m: mCorrect, shouldPass: true},
@@ -39,10 +39,10 @@ func TestUnmarshalInvalidCurvePoint(t *testing.T) {
 			a := new(CurvePoint)
 			err := a.UnmarshalBinary(tc.m)
 			if tc.shouldPass && err != nil {
-				t.Fatal("cannot unmarshal valid scalar")
+				t.Fatal("cannot unmarshal valid curve point")
 			}
 			if !tc.shouldPass && err == nil {
-				t.Fatalf("successfully marshaled invalid scalar: %s", name)
+				t.Fatalf("successfully marshaled invalid curve point: %s", name)
 			}
 		})
 	}
