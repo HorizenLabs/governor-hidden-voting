@@ -21,7 +21,15 @@ func (e *Scalar) String() string {
 
 func NewScalar(val *big.Int) *Scalar {
 	scalar := new(Scalar)
-	scalar.val.Set(new(big.Int).Mod(val, bn256.Order))
+	if val.CmpAbs(bn256.Order) < 0 {
+		if val.Sign() >= 0 {
+			scalar.val.Set(val)
+		} else {
+			scalar.val.Set(new(big.Int).Add(val, bn256.Order))
+		}
+	} else {
+		scalar.val.Set(new(big.Int).Mod(val, bn256.Order))
+	}
 	return scalar
 }
 
