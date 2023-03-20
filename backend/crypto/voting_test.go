@@ -15,7 +15,7 @@ func TestEncryptDecryptVote(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			got, err := encryptedVote.Decrypt(&keyPair.Sk, 1)
+			got, err := encryptedVote.Decrypt(&keyPair.Sk, tc.result)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -27,14 +27,16 @@ func TestEncryptDecryptVote(t *testing.T) {
 }
 
 type votingTests map[string]struct {
-	vote   Vote
-	result int64
+	vote       Vote
+	result     int64
+	isProvable bool
 }
 
 func generateVotingTests() votingTests {
 	tests := votingTests{
-		"yes": {vote: Yes, result: 1},
-		"no":  {vote: No, result: 0},
+		"yes": {vote: Yes, result: 1, isProvable: true},
+		"no":  {vote: No, result: 0, isProvable: true},
+		"42":  {vote: 42, result: 42, isProvable: false},
 	}
 	return tests
 }

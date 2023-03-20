@@ -26,13 +26,7 @@ type EncryptedVote struct {
 }
 
 func (vote Vote) curvePoint() *arith.CurvePoint {
-	var scalar *arith.Scalar
-	switch vote {
-	case Yes:
-		scalar = arith.NewScalar(big.NewInt(1))
-	case No:
-		scalar = arith.NewScalar(big.NewInt(0))
-	}
+	scalar := arith.NewScalar(big.NewInt(int64(vote)))
 	return new(arith.CurvePoint).ScalarBaseMult(scalar)
 }
 

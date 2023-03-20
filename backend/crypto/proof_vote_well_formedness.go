@@ -42,6 +42,8 @@ func ProveVoteWellFormedness(
 	case No:
 		b = new(arith.CurvePoint).ScalarBaseMult(arith.NewScalar(big.NewInt(-1)))
 		b = new(arith.CurvePoint).Add(&encryptedVote.B, b)
+	default:
+		return nil, errors.New("proof of vote well formedness can only be generated for yes/no vote")
 	}
 	cCheat, err := arith.RandomChallenge(reader)
 	if err != nil {

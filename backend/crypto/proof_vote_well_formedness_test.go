@@ -16,12 +16,18 @@ func TestProveAndVerifyVoteWellFormedness(t *testing.T) {
 				t.Fatal(err)
 			}
 			proof, err := ProveVoteWellFormedness(rand.Reader, encryptedVote, tc.vote, secret, &keyPair.Pk)
-			if err != nil {
+			if tc.isProvable && err != nil {
 				t.Fatal(err)
 			}
+			if !tc.isProvable && err == nil {
+				t.Fatal("generated a proof of vote well formedness of invalid vote")
+			}
 			err = VerifyVoteWellFormedness(proof, encryptedVote, &keyPair.Pk)
-			if err != nil {
+			if tc.isProvable && err != nil {
 				t.Fatal(err)
+			}
+			if !tc.isProvable && err == nil {
+				t.Fatal("correctly verified a proof of vote well formedness of invalid vote")
 			}
 		})
 	}
