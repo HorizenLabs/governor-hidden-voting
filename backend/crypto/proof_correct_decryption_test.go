@@ -17,11 +17,11 @@ func TestProveAndVerifyCorrectDecryption(t *testing.T) {
 				&keyPair.Pk,
 				tc.numVoters,
 				tc.numYes)
-			proof, err := ProveCorrectDecryption(rand.Reader, encryptedTally, keyPair)
+			proof, err := ProveCorrectDecryption(rand.Reader, &encryptedTally.Votes, keyPair)
 			if err != nil {
 				t.Fatal(err)
 			}
-			err = VerifyCorrectDecryption(proof, encryptedTally, tc.numYes, &keyPair.Pk)
+			err = VerifyCorrectDecryption(proof, &encryptedTally.Votes, tc.numYes, &keyPair.Pk)
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -18,24 +18,24 @@ type ProofCorrectDecryption struct {
 // ProveCorrectDecryption generates a proof of correct decryption of tally.
 func ProveCorrectDecryption(
 	reader io.Reader,
-	tally *EncryptedTally,
+	encryptedVote *EncryptedVote,
 	keyPair *KeyPair) (*ProofCorrectDecryption, error) {
 	// Implementation based on https://eprint.iacr.org/2016/765.pdf, section 4.4
 	r, v, err := arith.RandomCurvePoint(reader)
 	if err != nil {
 		return nil, err
 	}
-	u := new(arith.CurvePoint).ScalarMult(&tally.Votes.A, r)
+	u := new(arith.CurvePoint).ScalarMult(&encryptedVote.A, r)
 
 	bytesPk, err := keyPair.Pk.MarshalBinary()
 	if err != nil {
 		return nil, err
 	}
-	bytesA, err := tally.Votes.A.MarshalBinary()
+	bytesA, err := encryptedVote.A.MarshalBinary()
 	if err != nil {
 		return nil, err
 	}
-	bytesB, err := tally.Votes.B.MarshalBinary()
+	bytesB, err := encryptedVote.B.MarshalBinary()
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +66,7 @@ func ProveCorrectDecryption(
 // Parameter result is the total number of Yes votes
 func VerifyCorrectDecryption(
 	proof *ProofCorrectDecryption,
-	tally *EncryptedTally,
+	encryptedVote *EncryptedVote,
 	result int64,
 	pk *arith.CurvePoint) error {
 	// Implementation based on https://eprint.iacr.org/2016/765.pdf, section 4.4
@@ -81,8 +81,8 @@ func VerifyCorrectDecryption(
 	}
 
 	d := new(arith.CurvePoint).ScalarBaseMult(arith.NewScalar(big.NewInt(-result)))
-	d = new(arith.CurvePoint).Add(d, &tally.Votes.B)
-	sA := new(arith.CurvePoint).ScalarMult(&tally.Votes.A, &proof.S)
+	d = new(arith.CurvePoint).Add(d, &encryptedVote.B)
+	sA := new(arith.CurvePoint).ScalarMult(&encryptedVote.A, &proof.S)
 	cD := new(arith.CurvePoint).ScalarMult(d, proof.C.Scalar())
 	u := new(arith.CurvePoint).Add(sA, new(arith.CurvePoint).Neg(cD))
 
@@ -94,11 +94,11 @@ func VerifyCorrectDecryption(
 	if err != nil {
 		return err
 	}
-	bytesA, err := tally.Votes.A.MarshalBinary()
+	bytesA, err := encryptedVote.A.MarshalBinary()
 	if err != nil {
 		return err
 	}
-	bytesB, err := tally.Votes.B.MarshalBinary()
+	bytesB, err := encryptedVote.B.MarshalBinary()
 	if err != nil {
 		return err
 	}
