@@ -27,16 +27,15 @@ func TestEncryptDecryptVote(t *testing.T) {
 }
 
 type votingTests map[string]struct {
-	vote       Vote
-	result     int64
-	isProvable bool
+	vote   Vote
+	result int64
 }
 
 func generateVotingTests() votingTests {
 	tests := votingTests{
-		"yes": {vote: Yes, result: 1, isProvable: true},
-		"no":  {vote: No, result: 0, isProvable: true},
-		"42":  {vote: 42, result: 42, isProvable: false},
+		"yes": {vote: Yes, result: 1},
+		"no":  {vote: No, result: 0},
+		"42":  {vote: 42, result: 42},
 	}
 	return tests
 }
