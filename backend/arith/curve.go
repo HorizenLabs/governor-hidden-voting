@@ -22,11 +22,15 @@ func newCurvePoint(p *bn256.G1) *CurvePoint {
 }
 
 func RandomCurvePoint(r io.Reader) (*Scalar, *CurvePoint, error) {
-	k, p, err := bn256.RandomG1(r)
-	if err != nil {
-	    return nil, nil, err
+	for {
+		k, p, err := bn256.RandomG1(r)
+		if err != nil {
+			return nil, nil, err
+		}
+		if k.Sign() != 0 {
+			return NewScalar(k), newCurvePoint(p), err
+		}
 	}
-	return NewScalar(k), newCurvePoint(p), err
 }
 
 func (a *CurvePoint) String() string {
