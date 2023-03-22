@@ -22,11 +22,11 @@ func TestProveAndVerifyCorrectDecryption(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			err = VerifyCorrectDecryption(proof, encryptedVote, tc.numYes, &keyPair.Pk)
+			err = VerifyCorrectDecryption(proof, encryptedVote, Vote(tc.numYes), &keyPair.Pk)
 			if err != nil {
 				t.Fatal(err)
 			}
-			err = VerifyCorrectDecryption(proof, encryptedVote, tc.numYes+1, &keyPair.Pk)
+			err = VerifyCorrectDecryption(proof, encryptedVote, Vote(tc.numYes+1), &keyPair.Pk)
 			if err == nil {
 				t.Fatal("succesfully verified a proof of correcty decryption passing a wrong decrypted value")
 			}

@@ -66,7 +66,7 @@ func ProveCorrectDecryption(
 func VerifyCorrectDecryption(
 	proof *ProofCorrectDecryption,
 	encryptedVote *EncryptedVote,
-	result int64,
+	decryptedVote Vote,
 	pk *arith.CurvePoint) error {
 	// Implementation based on https://eprint.iacr.org/2016/765.pdf, section 4.4
 	m, err := json.Marshal(proof)
@@ -79,7 +79,7 @@ func VerifyCorrectDecryption(
 		return err
 	}
 
-	d := new(arith.CurvePoint).ScalarBaseMult(arith.NewScalar(big.NewInt(-result)))
+	d := new(arith.CurvePoint).ScalarBaseMult(arith.NewScalar(big.NewInt(-int64(decryptedVote))))
 	d = new(arith.CurvePoint).Add(d, &encryptedVote.B)
 	sA := new(arith.CurvePoint).ScalarMult(&encryptedVote.A, &proof.S)
 	cD := new(arith.CurvePoint).ScalarMult(d, proof.C.Scalar())
