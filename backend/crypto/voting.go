@@ -33,11 +33,6 @@ func NewEncryptedVote() *EncryptedVote {
 	return vote
 }
 
-func (vote Vote) curvePoint() *arith.CurvePoint {
-	scalar := arith.NewScalar(big.NewInt(int64(vote)))
-	return new(arith.CurvePoint).ScalarBaseMult(scalar)
-}
-
 // Set sets the receiver to v and returns it.
 func (e *EncryptedVote) Set(v *EncryptedVote) *EncryptedVote {
 	e.A.Set(&v.A)
@@ -56,16 +51,8 @@ func (e *EncryptedVote) Add(a, b *EncryptedVote) *EncryptedVote {
 // random scalar used for ElGamal encryption. This scalar is useful for
 // generating a proof of vote well-formedness with function ProveVoteWellFormedness.
 func (vote Vote) Encrypt(reader io.Reader, pk *arith.CurvePoint) (*EncryptedVote, *arith.Scalar, error) {
-	r, a, err := arith.RandomCurvePoint(reader)
-	if err != nil {
-		return nil, nil, err
-	}
-	b := new(arith.CurvePoint).ScalarMult(pk, r)
-	b = new(arith.CurvePoint).Add(b, vote.curvePoint())
-	encryptedVote := new(EncryptedVote)
-	encryptedVote.A.Set(a)
-	encryptedVote.B.Set(b)
-	return encryptedVote, r, nil
+	encodedVote := encode(vote)
+	return encryptInternal(encodedVote, reader, pk)
 }
 
 // Decrypt decrypts an encrypted vote and returns the result.
@@ -74,9 +61,44 @@ func (vote Vote) Encrypt(reader io.Reader, pk *arith.CurvePoint) (*EncryptedVote
 // If the encrypted vote has been obtained by summing a number m 0-1 votes,
 // then m can be used as upper bound.
 func (vote *EncryptedVote) Decrypt(sk *arith.Scalar, n int64) (Vote, error) {
-	// Decrypt the vote using baby-step giant-step algorithm
-	target := new(arith.CurvePoint).ScalarMult(&vote.A, new(arith.Scalar).Neg(sk))
-	target = new(arith.CurvePoint).Add(target, &vote.B)
+	encodedVote := vote.decryptInternal(sk)
+	return decode(encodedVote, n)
+}
+
+// Encrypt an encodedVote using ElGamal encryption
+func encryptInternal(
+	encodedVote *arith.CurvePoint,
+	reader io.Reader,
+	pk *arith.CurvePoint) (*EncryptedVote, *arith.Scalar, error) {
+	r, a, err := arith.RandomCurvePoint(reader)
+	if err != nil {
+		return nil, nil, err
+	}
+	b := new(arith.CurvePoint).ScalarMult(pk, r)
+	b = new(arith.CurvePoint).Add(b, encodedVote)
+	encryptedVote := new(EncryptedVote)
+	encryptedVote.A.Set(a)
+	encryptedVote.B.Set(b)
+	return encryptedVote, r, nil
+}
+
+// DecryptInternal computes the decryption of an encrypted vote (a, b), returning
+// the curve point b - sk*a.
+func (vote *EncryptedVote) decryptInternal(sk *arith.Scalar) *arith.CurvePoint {
+	skNegA := new(arith.CurvePoint).ScalarMult(&vote.A, new(arith.Scalar).Neg(sk))
+	return new(arith.CurvePoint).Add(skNegA, &vote.B)
+}
+
+// Encode encodes a vote m as the curve point m*g.
+func encode(vote Vote) *arith.CurvePoint {
+	scalar := arith.NewScalar(big.NewInt(int64(vote)))
+	return new(arith.CurvePoint).ScalarBaseMult(scalar)
+}
+
+// Decode decodes an encoded vote. Since this requires solving a dlog problem, an
+// upper bound n on the result should be provided.
+func decode(encodedVote *arith.CurvePoint, n int64) (Vote, error) {
+	// solve dlog problem via baby-step giant-step algorithm
 	m := int64(math.Ceil(math.Sqrt(float64(n + 1))))
 	gPow := make(map[string]int64)
 	for j := int64(0); j < m; j++ {
@@ -88,7 +110,7 @@ func (vote *EncryptedVote) Decrypt(sk *arith.Scalar, n int64) (Vote, error) {
 		gPow[string(valBinary)] = j
 	}
 	mNegG := new(arith.CurvePoint).ScalarBaseMult(arith.NewScalar(big.NewInt(int64(-m))))
-	gamma := new(arith.CurvePoint).Set(target)
+	gamma := new(arith.CurvePoint).Set(encodedVote)
 	for i := int64(0); i < m; i++ {
 		gammaBinary, err := gamma.MarshalBinary()
 		if err != nil {

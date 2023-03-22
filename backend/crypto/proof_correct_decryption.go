@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"math/big"
 
 	"github.com/HorizenLabs/e-voting-poc/backend/arith"
 )
@@ -68,6 +67,15 @@ func VerifyCorrectDecryption(
 	encryptedVote *EncryptedVote,
 	decryptedVote Vote,
 	pk *arith.CurvePoint) error {
+	minusEncodedVote := new(arith.CurvePoint).Neg(encode(decryptedVote))
+	d := new(arith.CurvePoint).Add(&encryptedVote.B, minusEncodedVote)
+	return verifyCorrectDecryptionInternal(proof, encryptedVote, d, pk)
+}
+
+func verifyCorrectDecryptionInternal(proof *ProofCorrectDecryption,
+	encryptedVote *EncryptedVote,
+	d *arith.CurvePoint,
+	pk *arith.CurvePoint) error {
 	// Implementation based on https://eprint.iacr.org/2016/765.pdf, section 4.4
 	m, err := json.Marshal(proof)
 	if err != nil {
@@ -79,8 +87,6 @@ func VerifyCorrectDecryption(
 		return err
 	}
 
-	d := new(arith.CurvePoint).ScalarBaseMult(arith.NewScalar(big.NewInt(-int64(decryptedVote))))
-	d = new(arith.CurvePoint).Add(d, &encryptedVote.B)
 	sA := new(arith.CurvePoint).ScalarMult(&encryptedVote.A, &proof.S)
 	cD := new(arith.CurvePoint).ScalarMult(d, proof.C.Scalar())
 	u := new(arith.CurvePoint).Add(sA, new(arith.CurvePoint).Neg(cD))
