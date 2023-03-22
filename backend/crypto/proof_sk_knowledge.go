@@ -63,15 +63,10 @@ func VerifySkKnowledge(proof *ProofSkKnowledge, pk *arith.CurvePoint) error {
 	if err != nil {
 		return err
 	}
-	c := arith.FiatShamirChallenge(bytesPk, bytesB)
-	if !c.Equal(&proof.C) {
-		return errors.New("sk knowledge proof verification failed, first check")
-	}
+	c := arith.FiatShamirChallenge(bytesPk, bytesV)
 
-	bPlusCPk := new(arith.CurvePoint).Add(b, cPk)
-	phi := new(arith.CurvePoint).ScalarBaseMult(&proof.D)
-	if !phi.Equal(bPlusCPk) {
-		return errors.New("sk knowledge proof verification failed, second check")
+	if !c.Equal(&proof.C) {
+		return errors.New("sk knowledge proof verification failed")
 	}
 	return nil
 }
