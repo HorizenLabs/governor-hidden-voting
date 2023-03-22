@@ -24,6 +24,7 @@ func ProveCorrectDecryption(
 	if err != nil {
 		return nil, err
 	}
+
 	u := new(arith.CurvePoint).ScalarMult(&encryptedVote.A, r)
 
 	bytesPk, err := keyPair.Pk.MarshalBinary()

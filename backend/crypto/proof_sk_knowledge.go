@@ -10,30 +10,32 @@ import (
 
 // ProofSkKnowledge is a cryptographic proof of knowledge of the secret key of an ElGamal KeyPair
 type ProofSkKnowledge struct {
-	D arith.Scalar
+	S arith.Scalar
 	C arith.Challenge
 }
 
 // ProveSkKnowledge generates a proof of knowledge of the secret key of an ElGamal KeyPair
 func ProveSkKnowledge(reader io.Reader, keyPair *KeyPair) (*ProofSkKnowledge, error) {
 	// Implementation based on https://eprint.iacr.org/2016/765.pdf, section 4.3
-	r, b, err := arith.RandomCurvePoint(reader)
+	r, v, err := arith.RandomCurvePoint(reader)
 	if err != nil {
 		return nil, err
 	}
+
 	bytesPk, err := keyPair.Pk.MarshalBinary()
 	if err != nil {
 		return nil, err
 	}
-	bytesB, err := b.MarshalBinary()
+	bytesV, err := v.MarshalBinary()
 	if err != nil {
 		return nil, err
 	}
-	c := arith.FiatShamirChallenge(bytesPk, bytesB)
-	d := new(arith.Scalar).Mul(c.Scalar(), &keyPair.Sk)
-	d = new(arith.Scalar).Add(r, d)
+	c := arith.FiatShamirChallenge(bytesPk, bytesV)
+
+	s := new(arith.Scalar).Mul(c.Scalar(), &keyPair.Sk)
+	s = new(arith.Scalar).Add(r, s)
 	proof := new(ProofSkKnowledge)
-	proof.D.Set(d)
+	proof.S.Set(s)
 	proof.C.Set(c)
 	return proof, nil
 }
@@ -52,14 +54,14 @@ func VerifySkKnowledge(proof *ProofSkKnowledge, pk *arith.CurvePoint) error {
 	}
 
 	cPk := new(arith.CurvePoint).ScalarMult(pk, proof.C.Scalar())
-	b := new(arith.CurvePoint).ScalarBaseMult(&proof.D)
-	b.Add(b, new(arith.CurvePoint).Neg(cPk))
+	v := new(arith.CurvePoint).ScalarBaseMult(&proof.S)
+	v.Add(v, new(arith.CurvePoint).Neg(cPk))
 
 	bytesPk, err := pk.MarshalBinary()
 	if err != nil {
 		return err
 	}
-	bytesB, err := b.MarshalBinary()
+	bytesV, err := v.MarshalBinary()
 	if err != nil {
 		return err
 	}
