@@ -9,7 +9,7 @@ import (
 	"github.com/HorizenLabs/e-voting-poc/backend/arith"
 )
 
-type Vote int
+type Vote int64
 
 const (
 	No Vote = iota
@@ -73,21 +73,21 @@ func (vote Vote) Encrypt(reader io.Reader, pk *arith.CurvePoint) (*EncryptedVote
 //
 // If the encrypted vote has been obtained by summing a number m 0-1 votes,
 // then m can be used as upper bound.
-func (vote *EncryptedVote) Decrypt(sk *arith.Scalar, n int64) (int64, error) {
+func (vote *EncryptedVote) Decrypt(sk *arith.Scalar, n int64) (Vote, error) {
 	// Decrypt the vote using baby-step giant-step algorithm
 	target := new(arith.CurvePoint).ScalarMult(&vote.A, new(arith.Scalar).Neg(sk))
 	target = new(arith.CurvePoint).Add(target, &vote.B)
 	m := int64(math.Ceil(math.Sqrt(float64(n + 1))))
 	gPow := make(map[string]int64)
 	for j := int64(0); j < m; j++ {
-		val := new(arith.CurvePoint).ScalarBaseMult(arith.NewScalar(big.NewInt(j)))
+		val := new(arith.CurvePoint).ScalarBaseMult(arith.NewScalar(big.NewInt(int64(j))))
 		valBinary, err := val.MarshalBinary()
 		if err != nil {
 			return 0, err
 		}
 		gPow[string(valBinary)] = j
 	}
-	mNegG := new(arith.CurvePoint).ScalarBaseMult(arith.NewScalar(big.NewInt(-m)))
+	mNegG := new(arith.CurvePoint).ScalarBaseMult(arith.NewScalar(big.NewInt(int64(-m))))
 	gamma := new(arith.CurvePoint).Set(target)
 	for i := int64(0); i < m; i++ {
 		gammaBinary, err := gamma.MarshalBinary()
@@ -97,7 +97,7 @@ func (vote *EncryptedVote) Decrypt(sk *arith.Scalar, n int64) (int64, error) {
 		j, ok := gPow[string(gammaBinary)]
 		if ok {
 			result := i*m + j
-			return result, nil
+			return Vote(result), nil
 		}
 		gamma.Add(gamma, mNegG)
 	}

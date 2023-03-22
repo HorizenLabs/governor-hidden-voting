@@ -24,7 +24,7 @@ func TestEncryptDecryptVote(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if got != tc.result {
+			if int64(got) != tc.result {
 				t.Fatalf("expected: %d, got: %d", tc.result, got)
 			}
 		})
@@ -43,11 +43,11 @@ func TestTallying(t *testing.T) {
 				&keyPair.Pk,
 				tc.numVoters,
 				tc.numYes)
-			result, err := encryptedResult.Decrypt(&keyPair.Sk, tc.numVoters)
+			result, err := encryptedResult.Decrypt(&keyPair.Sk, int64(tc.numVoters))
 			if err != nil {
 				t.Fatal(err)
 			}
-			if tc.numYes != result {
+			if tc.numYes != int(result) {
 				t.Fatalf("expected: %d yes, got: %d", tc.numYes, result)
 			}
 		})
@@ -58,17 +58,17 @@ func generateEncryptedResult(
 	t *testing.T,
 	r io.Reader,
 	pk *arith.CurvePoint,
-	numVoters int64,
-	numYes int64) *EncryptedVote {
+	numVoters int,
+	numYes int) *EncryptedVote {
 
 	if numYes > numVoters {
 		t.Fatal(errors.New("numYes cannot be greater than numVoters"))
 	}
 	encryptedResult := NewEncryptedVote()
-	perm := mathrand.Perm(int(numVoters))
+	perm := mathrand.Perm(numVoters)
 	for _, i := range perm {
 		var vote Vote
-		if int64(i) < numYes {
+		if i < numYes {
 			vote = Yes
 		} else {
 			vote = No
@@ -97,8 +97,8 @@ func generateVotingTests() votingTests {
 }
 
 type tallyingTests map[string]struct {
-	numVoters int64
-	numYes    int64
+	numVoters int
+	numYes    int
 }
 
 func generateTallyingTests() tallyingTests {
