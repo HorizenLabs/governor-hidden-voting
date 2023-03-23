@@ -10,8 +10,8 @@ import (
 
 // ProofSkKnowledge is a cryptographic proof of knowledge of the secret key of an ElGamal KeyPair
 type ProofSkKnowledge struct {
-	S arith.Scalar
-	C arith.Challenge
+	S arith.Scalar    `json:"s"`
+	C arith.Challenge `json:"c"`
 }
 
 // ProveSkKnowledge generates a proof of knowledge of the secret key of an ElGamal KeyPair

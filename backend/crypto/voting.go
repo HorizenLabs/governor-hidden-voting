@@ -21,8 +21,8 @@ const (
 // it can represent both a single 0-1 vote and the sum of an arbitrary number
 // of such votes.
 type EncryptedVote struct {
-	A arith.CurvePoint
-	B arith.CurvePoint
+	A arith.CurvePoint `json:"a"`
+	B arith.CurvePoint `json:"b"`
 }
 
 func NewEncryptedVote() *EncryptedVote {

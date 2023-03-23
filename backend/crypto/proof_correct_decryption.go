@@ -10,8 +10,8 @@ import (
 
 // ProofCorrectDecryption is a cryptographic proof of correct decryption of an encrypted vote
 type ProofCorrectDecryption struct {
-	S arith.Scalar
-	C arith.Challenge
+	S arith.Scalar    `json:"s"`
+	C arith.Challenge `json:"c"`
 }
 
 // ProveCorrectDecryption generates a proof of correct decryption of an encrypted vote.

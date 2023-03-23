@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	bn256 "github.com/ethereum/go-ethereum/crypto/bn256/cloudflare"
 )
 
@@ -13,6 +14,11 @@ const NumBytesCurvePoint = 2 * 256 / 8
 
 type CurvePoint struct {
 	p bn256.G1
+}
+
+type CurvePointInternal struct {
+	X hexutil.Bytes `json:"x"`
+	Y hexutil.Bytes `json:"y"`
 }
 
 func newCurvePoint(p *bn256.G1) *CurvePoint {
@@ -66,7 +72,7 @@ func (a *CurvePoint) Equal(b *CurvePoint) bool {
 	return bytes.Equal(a.p.Marshal(), b.p.Marshal())
 }
 
-func (a *CurvePoint) MarshalBinary() ([]byte, error) {
+func (a CurvePoint) MarshalBinary() ([]byte, error) {
 	return a.p.Marshal(), nil
 }
 
@@ -78,19 +84,26 @@ func (a *CurvePoint) UnmarshalBinary(m []byte) error {
 	return err
 }
 
-func (e *CurvePoint) MarshalJSON() ([]byte, error) {
+func (e CurvePoint) MarshalJSON() ([]byte, error) {
 	bytesE, err := e.MarshalBinary()
 	if err != nil {
 		return nil, err
 	}
-	return json.Marshal(bytesE)
+	a := CurvePointInternal{
+		X: bytesE[:NumBytesCurvePoint/2],
+		Y: bytesE[NumBytesCurvePoint/2:],
+	}
+	return json.Marshal(a)
 }
 
 func (e *CurvePoint) UnmarshalJSON(data []byte) error {
-	var bytesE []byte
-	err := json.Unmarshal(data, &bytesE)
+	var point CurvePointInternal
+	err := json.Unmarshal(data, &point)
 	if err != nil {
 		return err
 	}
-	return e.UnmarshalBinary(bytesE)
+	var buf []byte
+	buf = append(buf, point.X...)
+	buf = append(buf, point.Y...)
+	return e.UnmarshalBinary(buf)
 }
