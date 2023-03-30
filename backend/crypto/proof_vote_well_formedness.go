@@ -18,6 +18,15 @@ type ProofVoteWellFormedness struct {
 	C1 arith.Challenge `json:"c1"`
 }
 
+// Set sets p to q and returns q.
+func (q *ProofVoteWellFormedness) Set(p *ProofVoteWellFormedness) *ProofVoteWellFormedness {
+	q.R0.Set(&p.R0)
+	q.R1.Set(&p.R1)
+	q.C0.Set(&p.C0)
+	q.C1.Set(&p.C1)
+	return q
+}
+
 // ProveVoteWellFormedness generates a proof of well-formedness of an encrypted vote.
 // In order to obtain a valid proof, the parameters should be obtained in the following
 // way:

@@ -14,6 +14,13 @@ type ProofSkKnowledge struct {
 	C arith.Challenge `json:"c"`
 }
 
+// Set sets p to q and returns q.
+func (q *ProofSkKnowledge) Set(p *ProofSkKnowledge) *ProofSkKnowledge {
+	q.S.Set(&p.S)
+	q.C.Set(&p.C)
+	return q
+}
+
 // ProveSkKnowledge generates a proof of knowledge of the secret key of an ElGamal KeyPair
 func ProveSkKnowledge(reader io.Reader, keyPair *KeyPair) (*ProofSkKnowledge, error) {
 	// Implementation based on https://eprint.iacr.org/2016/765.pdf, section 4.3

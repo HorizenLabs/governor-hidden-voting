@@ -14,6 +14,13 @@ type ProofCorrectDecryption struct {
 	C arith.Challenge `json:"c"`
 }
 
+// Set sets p to q and returns q.
+func (q *ProofCorrectDecryption) Set(p *ProofCorrectDecryption) *ProofCorrectDecryption {
+	q.S.Set(&p.S)
+	q.C.Set(&p.C)
+	return q
+}
+
 // ProveCorrectDecryption generates a proof of correct decryption of an encrypted vote.
 func ProveCorrectDecryption(
 	reader io.Reader,
