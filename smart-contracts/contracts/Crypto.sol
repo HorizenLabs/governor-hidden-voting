@@ -1,3 +1,5 @@
+import "hardhat/console.sol";
+
 //SPDX-License-Identifier: UNLICENSED
 
 pragma solidity ^0.8.9;
@@ -117,6 +119,9 @@ function scalar(Challenge challenge) pure returns (Scalar) {
 }
 
 function neg(Scalar s) pure returns (Scalar) {
+    if (Scalar.unwrap(s) == 0) {
+        return s;
+    }
     return Scalar.wrap(ORDER - Scalar.unwrap(s));
 }
 

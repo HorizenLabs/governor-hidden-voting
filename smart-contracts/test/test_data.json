@@ -1,0 +1,147 @@
+{
+  "PkA": {
+    "x": "0x03f73a4313eb52f3dada7408e2a75069319f9468e7b5c8d32673bdbd2d811b49",
+    "y": "0x10de56ea7594f557eff156ceb2eb47276ef65741892665d5d6320d35d8351d57"
+  },
+  "ProofSkKnowledgeA": {
+    "s": "0x01b1ab6c0bda48107aa54085038ebaf046631b9b175428875fa037a0bba9af3a",
+    "c": "0x654ecaa42c930b97989461c5356b6d1a"
+  },
+  "PkB": {
+    "x": "0x279bbb21d7b5887f7055f2ef4b9910d707d46e740151ba6049b1f85401bd2e97",
+    "y": "0x2b7863b366d9041971d1608fcc4809e8e982eb7e2cbbd6c293e088f967427943"
+  },
+  "ProofSkKnowledgeB": {
+    "s": "0x2b88088dd33e285f7d3e0a35a2e4fb5a7876aedf68aa5c8e3f4d48db3d5d54e8",
+    "c": "0x0ed48e95f782b468bf8e9767682fbd79"
+  },
+  "EncryptedVotesValid": [
+    {
+      "a": {
+        "x": "0x04a692a273e09ff09ce2877c290db98928b33062d5ee158d00f7d11aafb5484a",
+        "y": "0x0eea5a9a30c16f24ac507e13573ec548293e1c51e95d74eda9be0698bee1687c"
+      },
+      "b": {
+        "x": "0x0f71cb60683019d9624d80bff9732f0536199ac829eab2bb2dd9428cfede4644",
+        "y": "0x2dceee5dca0be3b65e8cfdaf37a80860bcb83ef1a9794ad04bc443c6d18052c5"
+      }
+    },
+    {
+      "a": {
+        "x": "0x043449233b994af888756f982c84bbf77c5120c76f20327f14ecd4a4fd5d5535",
+        "y": "0x23b755dd749393f2f676cf467379a3e2a10b959c8c19678ba13d99441650758f"
+      },
+      "b": {
+        "x": "0x0735bbbd9efe97ffc0127ec7feb36d40323a2753507c6d297bdf19145291551e",
+        "y": "0x2252e98bc8bd050f30b421aec92c407e54b9b8e2e15d678b4cd96e95a86ebe9f"
+      }
+    },
+    {
+      "a": {
+        "x": "0x2b1ca8686bbb6036cbef53658aec4e0b57f073e8a6d64e12d488d671aa060509",
+        "y": "0x056657d1464262d1807b5cbdadcb75e3330d2d4f41b78d3384d393100eee0d80"
+      },
+      "b": {
+        "x": "0x1a8fe54bce51bd03e4c4ece159d1968f9766ae115d99a7898534253710116cb0",
+        "y": "0x11279ac37c0706068cd22bc7572546dccddac57c0c57c614947a0b26cefacd26"
+      }
+    },
+    {
+      "a": {
+        "x": "0x1c39ad38b888a9a92538353109b3110869d4c58f349859db3fb76e5c23ce8837",
+        "y": "0x0aafa715ea55c2aebd1b1f0bde0c0b39e161310a2700049823022019805d0b39"
+      },
+      "b": {
+        "x": "0x2e3bef32866c85e15be97c120e36bb99510a5cb5e4524e79c86e79956039889e",
+        "y": "0x28b0055e87ed90feb0e2776c6b305bf8da0fbd65a5b36659cfbb28e9af93846f"
+      }
+    },
+    {
+      "a": {
+        "x": "0x2c699e7bccb5c97b350f8674056ab82a8866008cd21b8b1d2859c9c338d7eae2",
+        "y": "0x2a98e630f0267dd2b1184edf852c3d4020a05474ed3c31673312034578921d33"
+      },
+      "b": {
+        "x": "0x2c012228c20b4405a7430804363522b6aee5cf2dd6c3a5eeebb83e3008e6c41a",
+        "y": "0x2adbc86add3e2c8f44a7b49598f494cf797d5774d50284e09a8ad9e9a74d221c"
+      }
+    }
+  ],
+  "ProofsVoteWellFormednessValid": [
+    {
+      "r0": "0x20b9adfac1422d96d9fedf8234c65fe15033014627750c4d3b63721e4f528206",
+      "r1": "0x0653f0e21c9446da9f669b00da4058346443b21433f51588278c84da5e58e142",
+      "c0": "0x410cc2e5c35f8ad967d875d99f7bae77",
+      "c1": "0xc226abd0d44fe85ba0ede8f6bd872829"
+    },
+    {
+      "r0": "0x29c0a2703274aaeb309f38f9a373cd6fc2b45eba3d8e49880a3c7ea26c504818",
+      "r1": "0x1e338d1a349a44b12496e266d5673c3f99e45f64f6502b3791dd5cbbdf9ac51b",
+      "c0": "0x173883103a700bce9239abb3b8eb6b64",
+      "c1": "0x17bc970d1130b41b356b6a16210eecb0"
+    },
+    {
+      "r0": "0x2a77d518280d7a86b57550c1a3254c6d2460ac8628e48d67327b0e32a605a86c",
+      "r1": "0x14069e09f823d824e1c82770e4b1473f266bfb8052746416f05af36ed7cfeb8a",
+      "c0": "0xba7c7b91d060513465c9490c0986fd20",
+      "c1": "0x743d5f2872148a4fa3d8faa1f034639e"
+    },
+    {
+      "r0": "0x17f435347a10efcd71bcbbb087409e90f2a707d0c9412159e617a72e5668b7c4",
+      "r1": "0x0a48c61077d6ad50d4771866461772eb96667c99822432e48e87a16cd5119361",
+      "c0": "0x470b4596572c2f24777d3665b296529e",
+      "c1": "0xae6e4d7cd9eb227da7c473bc17b888a4"
+    },
+    {
+      "r0": "0x283ce4d4fabd6470b2e8b25b65d86326afdb5c99d5de519f9183bdf0dd2f25e7",
+      "r1": "0x0a597fd6a18ef975045bdca7d32d4932a0dbf1aa6a0602317d7cabcd199d34f9",
+      "c0": "0x9dfd9f57a931b2281ec2722454e77e8d",
+      "c1": "0xe695132f66eaefd0ae3790b4aaa7a421"
+    }
+  ],
+  "EncryptedVotesInvalid": [
+    {
+      "a": {
+        "x": "0x2bc81ea4e26be92910e6379948eee409a277c9deb9e78fcd7ec679cd2cc90de7",
+        "y": "0x13d02545efa4c230912320a6bd25952c9299b07fd6d6e704327fec99d829f487"
+      },
+      "b": {
+        "x": "0x1c6ccff63c746e073e5ac75fdbbdaa09be04a05189467364dc016e33511e0392",
+        "y": "0x28f7ef05a5ab4ccadcfd1977a510abc6c879756be05185d2e091b1208ca66abb"
+      }
+    },
+    {
+      "a": {
+        "x": "0x2f92cee339c853e68f56b1fba0e38207ef88df0452e04fb2aadf15322169688c",
+        "y": "0x10b2746b41e19af511531230cfca126cdc49cca47e7ffb41467dab2b24579779"
+      },
+      "b": {
+        "x": "0x1920b455b6022a8c142b49396641452368f30a0e70370ab1fabdd8c3cc6f1b6d",
+        "y": "0x2ffab4856d64a3eade0a711f4021ae0772341c0cdd8b277666801bb9ab8e8c17"
+      }
+    }
+  ],
+  "ProofsVoteWellFormednessInvalid": [
+    {
+      "r0": "0x25e6f42bcd53e7f34970eb6a688768ccffa8650833a2d776b4a1dec6d6003740",
+      "r1": "0x1a8df5cf84dd72ee4ff5445dd462867b3bebc1e8ee7b9c863f9664fa8d7398c5",
+      "c0": "0xf53d51a8cc74d5c8e978e2ed91486e17",
+      "c1": "0x38f5f500a1f40ad6f166c93adc51e4d0"
+    },
+    {
+      "r0": "0x0f0419c04f5454bc0da4701253ddc8c03d0a43a73d14f2c3cc6dd3634db4f4e1",
+      "r1": "0x048d09a0f2b9931800a91f568eeba0021b699411c421f509cf041b8fbe81a5ca",
+      "c0": "0x8ce6b161034b6bfcf3d96ad30e157b10",
+      "c1": "0x8a46f00b1b22ccbdc1eb50279789552a"
+    }
+  ],
+  "ProofCorrectDecryptionValid": {
+    "s": "0x0ada4e5db14a470638449b77759ec90880491392a4310a7f22ae15d716ff297d",
+    "c": "0x6c40bc626d3c5bbf2d525c134b4d8b3c"
+  },
+  "ProofCorrectDecryptionInvalid": {
+    "s": "0x23f8d720edc3c1dc58f0e406569b9e8ed844f2409cac898b2e13c47463bbf9de",
+    "c": "0x51e1734848ce5c92d5db2f8592c17c54"
+  },
+  "Result": 3
+}
