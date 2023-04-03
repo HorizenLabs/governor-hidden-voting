@@ -9,6 +9,8 @@ const Status = {
     FINI: 4
 }
 
+const ORDER = ethers.BigNumber.from("21888242871839275222246405745257275088548364400416034343698204186575808495617");
+
 describe("Voting contract", function () {
     async function deployedFixture() {
         const Voting = await ethers.getContractFactory("Voting");
@@ -101,6 +103,16 @@ describe("Voting contract", function () {
                 deployedFixture
             );
             await expect(hardhatVoting.declarePk(data.PkA, data.ProofSkKnowledgeB))
+                .to.be.revertedWithCustomError(hardhatVoting, "ProofVerificationFailure")
+        });
+
+        it("Should revert if proof.s is greater or equal to curve order", async function () {
+            const { hardhatVoting, data } = await loadFixture(
+                deployedFixture
+            );
+            let proof = JSON.parse(JSON.stringify(data.ProofSkKnowledgeA));
+            proof.s = ethers.BigNumber.from(proof.s).add(ORDER);
+            await expect(hardhatVoting.declarePk(data.PkA, proof))
                 .to.be.revertedWithCustomError(hardhatVoting, "ProofVerificationFailure")
         });
 
@@ -200,6 +212,28 @@ describe("Voting contract", function () {
             ).to.be.revertedWithCustomError(hardhatVoting, "ProofVerificationFailure");
         });
 
+        it("Should revert if proof.r0 is greater or equal to curve order", async function () {
+            const { hardhatVoting, data } = await loadFixture(
+                votingStartedFixture
+            );
+            let proof = JSON.parse(JSON.stringify(data.ProofsVoteWellFormednessValid[1]));
+            proof.r0 = ethers.BigNumber.from(proof.r0).add(ORDER);
+            await expect(
+                hardhatVoting.castVote(proof, data.EncryptedVotesValid[1])
+            ).to.be.revertedWithCustomError(hardhatVoting, "ProofVerificationFailure");
+        });
+
+        it("Should revert if proof.r1 is greater or equal to curve order", async function () {
+            const { hardhatVoting, data } = await loadFixture(
+                votingStartedFixture
+            );
+            let proof = JSON.parse(JSON.stringify(data.ProofsVoteWellFormednessValid[1]));
+            proof.r1 = ethers.BigNumber.from(proof.r1).add(ORDER);
+            await expect(
+                hardhatVoting.castVote(proof, data.EncryptedVotesValid[1])
+            ).to.be.revertedWithCustomError(hardhatVoting, "ProofVerificationFailure");
+        });
+
         it("Should revert if proof is invalid (different pk)", async function () {
             const { hardhatVoting, addr, data } = await loadFixture(
                 votingStartedFixture
@@ -272,6 +306,16 @@ describe("Voting contract", function () {
                 votingStoppedFixture
             );
             await expect(hardhatVoting.tally(data.ProofCorrectDecryptionInvalid, data.Result))
+                .to.be.revertedWithCustomError(hardhatVoting, "ProofVerificationFailure")
+        });
+
+        it("Should revert if proof.s is greater or equal to curve order", async function () {
+            const { hardhatVoting, data } = await loadFixture(
+                votingStoppedFixture
+            );
+            let proof = JSON.parse(JSON.stringify(data.ProofCorrectDecryptionValid));
+            proof.s = ethers.BigNumber.from(proof.s).add(ORDER);
+            await expect(hardhatVoting.tally(proof, data.Result))
                 .to.be.revertedWithCustomError(hardhatVoting, "ProofVerificationFailure")
         });
 

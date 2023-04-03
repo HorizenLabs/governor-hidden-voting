@@ -142,6 +142,9 @@ function verifyVoteWellFormedness(
     EncryptedVote calldata vote,
     CurvePoint storage pk
 ) view {
+    if (Scalar.unwrap(proof.r0) >= ORDER || Scalar.unwrap(proof.r1) >= ORDER) {
+        revert ProofVerificationFailure();
+    }
     CurvePoint memory a0 = ecAdd(
         ecMul(g(), proof.r0),
         ecMul(vote.a, neg(scalar(proof.c0)))
@@ -191,6 +194,9 @@ function verifySkKnowledge(
     ProofSkKnowledge calldata proof,
     CurvePoint calldata pk
 ) view {
+    if (Scalar.unwrap(proof.s) >= ORDER) {
+        revert ProofVerificationFailure();
+    }
     CurvePoint memory v = ecAdd(
         ecMul(g(), proof.s),
         ecMul(pk, neg(scalar(proof.c)))
@@ -209,6 +215,9 @@ function verifyCorrectDecryption(
     uint decryptedVote,
     CurvePoint storage pk
 ) view {
+    if (Scalar.unwrap(proof.s) >= ORDER) {
+        revert ProofVerificationFailure();
+    }
     CurvePoint memory d = ecAdd(
         encryptedVote.b,
         ecMul(g(), neg(Scalar.wrap(decryptedVote)))
