@@ -2,8 +2,8 @@
 package main
 
 import (
-	"crypto/rand"
 	"encoding/json"
+	"math/rand"
 
 	"github.com/HorizenLabs/e-voting-poc/backend/arith"
 	"github.com/HorizenLabs/e-voting-poc/backend/crypto"
@@ -24,15 +24,17 @@ type TestData struct {
 }
 
 func main() {
+	rng := rand.New(rand.NewSource(42))
+
 	testData := new(TestData)
 
-	keyPairA, proofSkKnowledgeA, err := crypto.NewKeyPairWithProof(rand.Reader)
+	keyPairA, proofSkKnowledgeA, err := crypto.NewKeyPairWithProof(rng)
 	if err != nil {
 		panic(err)
 	}
 	pkA := &keyPairA.Pk
 
-	keyPairB, proofSkKnowledgeB, err := crypto.NewKeyPairWithProof(rand.Reader)
+	keyPairB, proofSkKnowledgeB, err := crypto.NewKeyPairWithProof(rng)
 	if err != nil {
 		panic(err)
 	}
@@ -42,7 +44,7 @@ func main() {
 
 	votes := []crypto.Vote{crypto.Yes, crypto.No, crypto.Yes, crypto.Yes, crypto.No}
 	for _, vote := range votes {
-		encryptedVote, proof, err := crypto.EncryptVoteWithProof(rand.Reader, int64(vote), pkA)
+		encryptedVote, proof, err := crypto.EncryptVoteWithProof(rng, int64(vote), pkA)
 		if err != nil {
 			panic(err)
 		}
@@ -53,7 +55,7 @@ func main() {
 
 	votesInvalid := []crypto.Vote{crypto.Yes, crypto.No}
 	for _, vote := range votesInvalid {
-		encryptedVote, proof, err := crypto.EncryptVoteWithProof(rand.Reader, int64(vote), pkB)
+		encryptedVote, proof, err := crypto.EncryptVoteWithProof(rng, int64(vote), pkB)
 		if err != nil {
 			panic(err)
 		}
@@ -66,7 +68,7 @@ func main() {
 		panic(err)
 	}
 
-	proofCorrectDecryptionValid, err := crypto.ProveCorrectDecryption(rand.Reader, encryptedTally, keyPairA)
+	proofCorrectDecryptionValid, err := crypto.ProveCorrectDecryption(rng, encryptedTally, keyPairA)
 	if err != nil {
 		panic(err)
 	}
@@ -76,12 +78,12 @@ func main() {
 		panic(err)
 	}
 
-	additionalVote, _, err := crypto.EncryptVoteWithProof(rand.Reader, int64(crypto.No), pkA)
+	additionalVote, _, err := crypto.EncryptVoteWithProof(rng, int64(crypto.No), pkA)
 	if err != nil {
 		panic(err)
 	}
 	encryptedTally.Add(encryptedTally, additionalVote)
-	proofCorrectDecryptionInvalid, err := crypto.ProveCorrectDecryption(rand.Reader, encryptedTally, keyPairA)
+	proofCorrectDecryptionInvalid, err := crypto.ProveCorrectDecryption(rng, encryptedTally, keyPairA)
 	if err != nil {
 		panic(err)
 	}
