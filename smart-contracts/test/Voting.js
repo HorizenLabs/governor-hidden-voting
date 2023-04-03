@@ -169,7 +169,8 @@ describe("Voting contract", function () {
                 hardhatVoting.connect(addr[1]).castVote(
                     data.ProofsVoteWellFormednessValid[2],
                     data.EncryptedVotesValid[2])
-            ).to.be.revertedWithCustomError(hardhatVoting, "DoubleVoting");
+            ).to.be.revertedWithCustomError(hardhatVoting, "DoubleVoting")
+                .withArgs(await addr[1].getAddress());
         });
 
         it("Should prevent proof reuse", async function () {
@@ -184,7 +185,8 @@ describe("Voting contract", function () {
                 hardhatVoting.connect(addr[2]).castVote(
                     data.ProofsVoteWellFormednessValid[1],
                     data.EncryptedVotesValid[1])
-            ).to.be.revertedWithCustomError(hardhatVoting, "DoubleProof");
+            ).to.be.revertedWithCustomError(hardhatVoting, "DoubleProof")
+                .withArgs(await addr[2].getAddress());
         });
 
         it("Should revert if proof is invalid (different vote)", async function () {

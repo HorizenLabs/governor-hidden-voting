@@ -50,7 +50,7 @@ contract Voting {
     error Unauthorized(address caller);
     error WrongStatus(Status status);
     error DoubleVoting(address caller);
-    error DoubleProof();
+    error DoubleProof(address caller);
 
     constructor() {
         authority = msg.sender;
@@ -116,7 +116,7 @@ contract Voting {
             )
         );
         if (proofHashAlreadySeen[proofHash]) {
-            revert DoubleProof();
+            revert DoubleProof(msg.sender);
         }
         verifyVoteWellFormedness(proof, vote, pk);
 
