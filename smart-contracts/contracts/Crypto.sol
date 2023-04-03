@@ -1,8 +1,8 @@
-import "hardhat/console.sol";
-
 //SPDX-License-Identifier: UNLICENSED
 
 pragma solidity ^0.8.9;
+
+import "hardhat/console.sol";
 
 struct CurvePoint {
     uint256 x;
@@ -13,7 +13,11 @@ type Scalar is uint256;
 
 type Challenge is uint128;
 
+/// @dev The order of bn256.G1 curve. Value taken from variable bn256.Order,
+/// go package github.com/ethereum/go-ethereum/crypto/bn256/cloudflare
 uint256 constant ORDER = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
+/// @dev The prime of bn256.G1 base field. Value taken from variable bn256.P,
+/// go package github.com/ethereum/go-ethereum/crypto/bn256/cloudflare
 uint256 constant P = 21888242871839275222246405745257275088696311157297823662689037894645226208583;
 
 uint256 constant EC_ADD_ADDRESS = 0x06;
@@ -53,14 +57,20 @@ struct ProofVoteWellFormedness {
 
 error ProofVerificationFailure();
 
+/// @dev The generator of bn256.G1 group.
+/// Coordinate values taken from go unit test TestCoordinateValues
 function g() pure returns (CurvePoint memory) {
     return CurvePoint({x: 1, y: 2});
 }
 
+/// @dev Inverse of generator of bn256.G1 group.
+/// Coordinate values taken from go unit test TestCoordinateValues
 function gNeg() pure returns (CurvePoint memory) {
     return CurvePoint({x: 1, y: P - 2});
 }
 
+/// @dev A simple wrapper around call to precompiled smart contract
+/// for point addition on elliptic curve bn256.G1
 function ecAdd(
     CurvePoint memory a,
     CurvePoint memory b
@@ -86,6 +96,8 @@ function ecAdd(
     }
 }
 
+/// @dev A simple wrapper around call to precompiled smart contract
+/// for scalar multiplication on elliptic curve bn256.G1
 function ecMul(
     CurvePoint memory a,
     Scalar s
@@ -237,12 +249,17 @@ function verifyCorrectDecryptionInternal(
     }
 }
 
+/// @dev Encrypted tally is initialized to a non-zero value to "warm-up" the storage
+/// location, so that the first voter does not incur an additional gas cost compared
+/// to subsequent voters.
 function initTally(EncryptedTally storage tally) {
     tally.numVoters = 1;
     tally.vote.a = g();
     tally.vote.b = g();
 }
 
+/// @dev When voting is finished, the dummy value added during tally initialization
+/// must be subtracted.
 function finalizeTally(EncryptedTally storage tally) {
     tally.numVoters--;
     tally.vote.a = ecAdd(tally.vote.a, gNeg());
