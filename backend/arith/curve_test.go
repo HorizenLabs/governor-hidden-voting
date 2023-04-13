@@ -3,7 +3,10 @@ package arith
 import (
 	"crypto/rand"
 	"encoding/json"
+	"math/big"
 	"testing"
+
+	bn256 "github.com/ethereum/go-ethereum/crypto/bn256/cloudflare"
 )
 
 func TestUnmarshalCurvePoint(t *testing.T) {
@@ -83,5 +86,47 @@ func TestMarshalUnmarshalJSONCurvePoint(t *testing.T) {
 	}
 	if !got.Equal(want) {
 		t.Fatalf("want: %s, got: %s", want, got)
+	}
+}
+
+func TestCoordinateValues(t *testing.T) {
+	tests := map[string]struct {
+		p *CurvePoint
+		x *big.Int
+		y *big.Int
+	}{
+		"g": {
+			p: new(CurvePoint).ScalarBaseMult(NewScalar(big.NewInt(1))),
+			x: big.NewInt(1),
+			y: big.NewInt(2),
+		},
+		"gNeg": {
+			p: new(CurvePoint).ScalarBaseMult(NewScalar(big.NewInt(-1))),
+			x: big.NewInt(1),
+			y: new(big.Int).Sub(bn256.P, big.NewInt(2)),
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			m, err := json.Marshal(tc.p)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var point CurvePointInternal
+			err = json.Unmarshal(m, &point)
+			if err != nil {
+				t.Fatal(err)
+			}
+			x := new(big.Int).SetBytes(point.X)
+			y := new(big.Int).SetBytes(point.Y)
+
+			if x.Cmp(tc.x) != 0 {
+				t.Fatalf("expected x == %s, got %s", tc.x, x)
+			}
+			if y.Cmp(tc.y) != 0 {
+				t.Fatalf("expected y == %s, got %s", tc.y, y)
+			}
+		})
 	}
 }

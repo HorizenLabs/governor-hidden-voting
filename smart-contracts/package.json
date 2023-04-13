@@ -1,0 +1,27 @@
+{
+  "name": "e-voting-poc",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^2.0.2",
+    "hardhat": "^2.13.0",
+    "hardhat-gas-reporter": "^1.0.9"
+  },
+  "directories": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HorizenLabs/e-voting-poc.git"
+  },
+  "bugs": {
+    "url": "https://github.com/HorizenLabs/e-voting-poc/issues"
+  },
+  "homepage": "https://github.com/HorizenLabs/e-voting-poc#readme",
+  "description": ""
+}

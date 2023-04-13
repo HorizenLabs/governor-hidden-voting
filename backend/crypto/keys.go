@@ -8,8 +8,8 @@ import (
 
 // KeyPair is an election authority key-pair for ElGamal encryption of votes.
 type KeyPair struct {
-	Pk arith.CurvePoint // public key
-	Sk arith.Scalar     // secret key
+	Pk arith.CurvePoint `json:"pk"` // public key
+	Sk arith.Scalar     `json:"sk"` // secret key
 }
 
 // NewKeyPair allocates and initializes a new valid ElGamal KeyPair.

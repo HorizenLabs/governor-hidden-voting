@@ -12,10 +12,19 @@ import (
 // ProofVoteWellFormedness is a cryptographic proof that an encrypted
 // vote is well-formed, i.e. it encodes a 0 (No) or a 1 (Yes).
 type ProofVoteWellFormedness struct {
-	R0 arith.Scalar
-	R1 arith.Scalar
-	C0 arith.Challenge
-	C1 arith.Challenge
+	R0 arith.Scalar    `json:"r0"`
+	R1 arith.Scalar    `json:"r1"`
+	C0 arith.Challenge `json:"c0"`
+	C1 arith.Challenge `json:"c1"`
+}
+
+// Set sets p to q and returns q.
+func (q *ProofVoteWellFormedness) Set(p *ProofVoteWellFormedness) *ProofVoteWellFormedness {
+	q.R0.Set(&p.R0)
+	q.R1.Set(&p.R1)
+	q.C0.Set(&p.C0)
+	q.C1.Set(&p.C1)
+	return q
 }
 
 // ProveVoteWellFormedness generates a proof of well-formedness of an encrypted vote.

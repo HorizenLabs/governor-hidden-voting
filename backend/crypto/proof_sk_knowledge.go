@@ -10,8 +10,15 @@ import (
 
 // ProofSkKnowledge is a cryptographic proof of knowledge of the secret key of an ElGamal KeyPair
 type ProofSkKnowledge struct {
-	S arith.Scalar
-	C arith.Challenge
+	S arith.Scalar    `json:"s"`
+	C arith.Challenge `json:"c"`
+}
+
+// Set sets p to q and returns q.
+func (q *ProofSkKnowledge) Set(p *ProofSkKnowledge) *ProofSkKnowledge {
+	q.S.Set(&p.S)
+	q.C.Set(&p.C)
+	return q
 }
 
 // ProveSkKnowledge generates a proof of knowledge of the secret key of an ElGamal KeyPair
