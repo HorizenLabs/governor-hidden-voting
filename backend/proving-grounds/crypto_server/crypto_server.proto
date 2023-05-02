@@ -1,0 +1,74 @@
+syntax = "proto3";
+
+option go_package = "github.com/HorizenLabs/e-voting-poc/backend/proving-grounds/crypto_server";
+
+package crypto_server;
+
+message RegisterCryptographyPrimitive {
+  string request_id = 1;
+  string version = 2;				            // Version of the primitive
+  string name = 3;					            // The primitive name
+  string address = 4;                   // where to connect to cryptographic service
+  uint32 port = 5;                      // the port number to connect to
+  repeated Capability capabilities = 6;	// The capabilities
+}
+
+message Capability {
+  string id = 1;					    // The capability unique id
+  string name = 2;					  // Unique capability name
+  string description = 3;			// The description
+  uint32 num_arguments = 4;		// The number of expected arguments
+}
+
+message HealthCheckRequest {
+  bool healthy = 1;				// Always true
+}
+
+message HealthCheckResponse {
+  enum Status {
+    UNKNOWN = 0;
+    ACTIVE = 1;
+    NOT_ACTIVE = 2;
+  }
+  Status status = 1;
+}
+
+message Execute {
+  string request_id = 1;		    // Execute id like uuid
+  string capability_id = 2;		  // Capability id from registration list
+  repeated bytes arguments = 3;	// Serialized byte form for arguments
+  optional int32 timeout = 4;		// optional timeout in seconds
+}
+
+message ListCapabilitiesRequest {
+  string request_id = 1;
+  optional string filter_name = 2;
+  optional string filter_id = 3;
+  optional uint32 filter_args = 4;
+  optional uint32 page_num = 5;
+  optional uint32 page_size = 6;
+}
+
+message ListCapabilitiesResponse {
+  string request_id = 1;
+  bool ok = 2;
+  optional string error = 3;
+  repeated Capability capabilities = 4;
+}
+
+message Result {
+  string request_id = 1;		    // Execute request id
+  bool ok = 2;				          // Successful or not
+  optional string error = 3;		// On failure, should be the reason why it failed in human friendly form
+  repeated bytes result = 4; 		// Anything else that’s returned
+}
+
+service CryptographicService {
+  rpc Watch(HealthCheckRequest) returns (stream HealthCheckResponse) {}
+  rpc ListCapabilities(ListCapabilitiesRequest) returns (ListCapabilitiesResponse) {}
+  rpc Compute(Execute) returns (Result) {}
+}
+
+service CryptographicRegistrar {
+    rpc Register(RegisterCryptographyPrimitive) returns(Result) {}
+}
