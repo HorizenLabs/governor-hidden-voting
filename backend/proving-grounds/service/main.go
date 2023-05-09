@@ -7,7 +7,7 @@ import (
 	"log"
 	"net"
 
-	cpb "github.com/HorizenLabs/e-voting-poc/backend/proving-grounds/capabilities"
+	"github.com/HorizenLabs/e-voting-poc/backend/proving-grounds/capabilities"
 	cs "github.com/HorizenLabs/e-voting-poc/backend/proving-grounds/crypto_server"
 	"github.com/google/uuid"
 	"google.golang.org/grpc"
@@ -17,53 +17,98 @@ import (
 const Name = "e-voting"
 const Version = "0.1.0"
 
-var (
-	protocol         = flag.String("protocol", "http", "The protocol to use")
-	address          = flag.String("address", "127.0.0.1", "The reachable address")
-	bind_address     = flag.String("bind_address", "127.0.0.1", "The bind address")
-	port             = flag.Uint("port", 3333, "The bind port")
-	register_address = flag.String("register_address", "127.0.0.1", "The address to proving grounds registration")
-	register_port    = flag.Uint("register_port", 5678, "The port to proving grounds registration")
-)
+type Args struct {
+	protocol         string
+	address          string
+	bind_address     string
+	port             uint
+	register_address string
+	register_port    uint
+}
 
-func main() {
+func newDefaultArgs() *Args {
+	return &Args{
+		protocol:         "http",
+		address:          "127.0.0.1",
+		bind_address:     "127.0.0.1",
+		port:             3333,
+		register_address: "127.0.0.1",
+		register_port:    5678,
+	}
+}
+
+func parseArgs() *Args {
+	args := new(Args)
+	defaultArgs := newDefaultArgs()
+
+	flag.StringVar(&args.protocol, "protocol", defaultArgs.protocol, "The protocol to use")
+	flag.StringVar(&args.address, "address", defaultArgs.address, "The reachable address")
+	flag.StringVar(&args.bind_address, "bind_address", defaultArgs.bind_address, "The bind address")
+	flag.UintVar(&args.port, "port", defaultArgs.port, "The bind port")
+	flag.StringVar(&args.register_address, "register_address", defaultArgs.register_address, "The address to proving grounds registration")
+	flag.UintVar(&args.register_port, "register_port", defaultArgs.register_port, "The port to proving grounds registration")
+
 	flag.Parse()
-	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", *bind_address, *port))
+	return args
+}
+
+func registerAndServeEVotingService(args *Args) error {
+	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", args.bind_address, args.port))
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		return fmt.Errorf("failed to listen: %v", err)
 	}
 	var dialOpts []grpc.DialOption
 	dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 
-	var serverOpts []grpc.ServerOption
-
-	serverAddr := fmt.Sprintf("%v:%v", *register_address, *register_port)
+	serverAddr := fmt.Sprintf("%v:%v", args.register_address, args.register_port)
 	conn, err := grpc.Dial(serverAddr, dialOpts...)
 	if err != nil {
-		log.Fatalf("failed to dial: %v", err)
+		return fmt.Errorf("failed to dial: %v", err)
 	}
 	defer conn.Close()
 	client := cs.NewCryptographicRegistrarClient(conn)
 
 	primitiveUUID, err := uuid.NewRandom()
 	if err != nil {
-		log.Fatalf("failed to compute uuid for primitive: %v", err)
+		return fmt.Errorf("failed to compute uuid for primitive: %v", err)
 	}
+
+	service := newCryptographicServiceServer()
+	capabilities := []Capability{
+		capabilities.NewKeyPairWithProofCapability{},
+		capabilities.EncryptVoteWithProofCapability{},
+		capabilities.DecryptTallyWithProofCapability{},
+	}
+	for _, capability := range capabilities {
+		service.registerCapability(capability)
+	}
+
 	primitiveInfo := cs.RegisterCryptographyPrimitive{
 		RequestId:    primitiveUUID.String(),
 		Version:      Version,
 		Name:         Name,
-		Address:      fmt.Sprintf("%v://%v", *protocol, *address),
-		Port:         uint32(*port),
-		Capabilities: cpb.ListCapabilities(),
+		Address:      fmt.Sprintf("%v://%v", args.protocol, args.address),
+		Port:         uint32(args.port),
+		Capabilities: service.listRawCapabilities(),
 	}
 
-	_, err = client.Register(context.Background(), &primitiveInfo)
+	registrationResult, err := client.Register(context.Background(), &primitiveInfo)
 	if err != nil {
-		log.Fatalf("failed to register primitive: %v", err)
+		return fmt.Errorf("failed to register primitive: %v", err)
+	}
+	if !registrationResult.GetOk() {
+		return fmt.Errorf(registrationResult.GetError())
 	}
 
-	grpcServer := grpc.NewServer(serverOpts...)
-	cs.RegisterCryptographicServiceServer(grpcServer, newServer())
+	grpcServer := grpc.NewServer()
+	cs.RegisterCryptographicServiceServer(grpcServer, newCryptographicServiceServer())
 	grpcServer.Serve(lis)
+	return nil
+}
+
+func main() {
+	args := parseArgs()
+	if err := registerAndServeEVotingService(args); err != nil {
+		log.Fatal(err)
+	}
 }
