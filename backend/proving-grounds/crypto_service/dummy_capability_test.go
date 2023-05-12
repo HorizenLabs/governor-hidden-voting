@@ -1,4 +1,4 @@
-package main
+package crypto_service
 
 import "fmt"
 
