@@ -1,5 +1,6 @@
 const { expect } = require("chai");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
+const { loadEVotingBackend } = require("../../backend/wasm/assets/wasm_exec_node")
 
 const Status = {
     INIT: 0,
@@ -12,6 +13,52 @@ const Status = {
 const ORDER = ethers.BigNumber.from("21888242871839275222246405745257275088548364400416034343698204186575808495617");
 
 describe("Voting contract", function () {
+    async function generateData() {
+        await loadEVotingBackend()
+
+        const data = new Object();
+
+        ({ keyPair: KeyPairA, proof: data.ProofSkKnowledgeA } = await goNewKeyPairWithProof());
+        ({ keyPair: KeyPairB, proof: data.ProofSkKnowledgeB } = await goNewKeyPairWithProof());
+        data.PkA = KeyPairA.pk;
+        data.PkB = KeyPairB.pk;
+
+        let encryptedTally;
+        data.EncryptedVotesValid = [];
+        data.ProofsVoteWellFormednessValid = [];
+        const votes = [1, 0, 1, 1, 0];
+        for (let i = 0; i < votes.length; i++) {
+            const { encryptedVote: encrypedVote, proof: proof } = await goEncryptVoteWithProof(votes[i], KeyPairA.pk);
+            if (i == 0) {
+                encryptedTally = encrypedVote;
+            } else {
+                encryptedTally = await goAddEncryptedVotes(encryptedTally, encrypedVote);
+            }
+            data.EncryptedVotesValid.push(encrypedVote);
+            data.ProofsVoteWellFormednessValid.push(proof);
+        }
+
+        let encryptedTallyInvalid
+        data.EncryptedVotesInvalid = [];
+        data.ProofsVoteWellFormednessInvalid = [];
+        const votesInvalid = [1, 0];
+        for (let i = 0; i < votesInvalid.length; i++) {
+            const { encryptedVote: encrypedVote, proof: proof } = await goEncryptVoteWithProof(votes[i], KeyPairB.pk);
+            if (i == 0) {
+                encryptedTallyInvalid = encrypedVote;
+            } else {
+                encryptedTallyInvalid = await goAddEncryptedVotes(encryptedTallyInvalid, encrypedVote);
+            }
+            data.EncryptedVotesInvalid.push(encrypedVote);
+            data.ProofsVoteWellFormednessInvalid.push(proof);
+        }
+
+        ({ result: data.Result, proof: data.ProofCorrectDecryptionValid } = await goDecryptTallyWithProof(encryptedTally, votes.length, KeyPairA));
+        ({ proof: data.ProofCorrectDecryptionInvalid } = await goDecryptTallyWithProof(encryptedTallyInvalid, votesInvalid.length, KeyPairB));
+
+        return data;
+    }
+
     async function deployedFixture() {
         const Voting = await ethers.getContractFactory("Voting");
         const addr = await ethers.getSigners();
@@ -20,7 +67,7 @@ describe("Voting contract", function () {
         const hardhatVoting = await Voting.deploy();
         await hardhatVoting.deployed();
 
-        const data = require("./test_data.json");
+        const data = await generateData();
         return { Voting, hardhatVoting, owner, addr, data };
     }
 
