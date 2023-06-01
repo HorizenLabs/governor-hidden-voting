@@ -31,7 +31,7 @@ func jsValueScalar(s *arith.Scalar) (js.Value, error) {
 	if err != nil {
 		return js.Null(), err
 	}
-	return js.ValueOf(string(sJSON[1 : len(sJSON)-1])), nil
+	return js.ValueOf(string(sJSON)), nil
 }
 
 func jsValueChallenge(c *arith.Challenge) (js.Value, error) {
@@ -39,7 +39,7 @@ func jsValueChallenge(c *arith.Challenge) (js.Value, error) {
 	if err != nil {
 		return js.Null(), err
 	}
-	return js.ValueOf(string(cJSON[1 : len(cJSON)-1])), nil
+	return js.ValueOf(string(cJSON)), nil
 }
 
 func jsValueKeyPair(keyPair *crypto.KeyPair) (js.Value, error) {

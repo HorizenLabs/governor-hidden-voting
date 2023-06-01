@@ -118,8 +118,8 @@ func TestCoordinateValues(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			x := new(big.Int).SetBytes(point.X)
-			y := new(big.Int).SetBytes(point.Y)
+			x := new(big.Int).SetBytes(point.X.Bytes())
+			y := new(big.Int).SetBytes(point.Y.Bytes())
 
 			if x.Cmp(tc.x) != 0 {
 				t.Fatalf("expected x == %s, got %s", tc.x, x)

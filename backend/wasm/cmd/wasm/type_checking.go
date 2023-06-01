@@ -24,11 +24,6 @@ func isObject(obj js.Value, keys []string, types []js.Type) error {
 			return err
 		}
 	}
-	object := js.Global().Get("Object")
-	length := object.Call("keys", obj).Get("length").Int()
-	if length != len(keys) {
-		return fmt.Errorf("extraneous fields")
-	}
 	return nil
 }
 

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	bn256 "github.com/ethereum/go-ethereum/crypto/bn256/cloudflare"
 )
 
@@ -82,18 +81,20 @@ func (e *Scalar) UnmarshalBinary(m []byte) error {
 }
 
 func (e Scalar) MarshalJSON() ([]byte, error) {
-	bytesE, err := e.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(hexutil.Bytes(bytesE))
+	return e.val.MarshalJSON()
 }
 
 func (e *Scalar) UnmarshalJSON(data []byte) error {
-	var bytesE hexutil.Bytes
-	err := json.Unmarshal(data, &bytesE)
+	var s = new(big.Int)
+	err := json.Unmarshal(data, s)
 	if err != nil {
 		return err
 	}
-	return e.UnmarshalBinary(bytesE)
+	if len(s.Bytes()) > NumBytesScalar {
+		return fmt.Errorf("scalar is too big")
+	}
+	var buf = make([]byte, NumBytesScalar)
+	s.FillBytes(buf)
+
+	return e.UnmarshalBinary(buf)
 }

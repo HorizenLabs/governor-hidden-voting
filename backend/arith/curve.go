@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/big"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	bn256 "github.com/ethereum/go-ethereum/crypto/bn256/cloudflare"
 )
 
@@ -17,8 +17,8 @@ type CurvePoint struct {
 }
 
 type CurvePointInternal struct {
-	X hexutil.Bytes `json:"x"`
-	Y hexutil.Bytes `json:"y"`
+	X *big.Int `json:"x"`
+	Y *big.Int `json:"y"`
 }
 
 func newCurvePoint(p *bn256.G1) *CurvePoint {
@@ -90,8 +90,8 @@ func (e CurvePoint) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 	a := CurvePointInternal{
-		X: bytesE[:NumBytesCurvePoint/2],
-		Y: bytesE[NumBytesCurvePoint/2:],
+		X: new(big.Int).SetBytes(bytesE[:NumBytesCurvePoint/2]),
+		Y: new(big.Int).SetBytes(bytesE[NumBytesCurvePoint/2:]),
 	}
 	return json.Marshal(a)
 }
@@ -102,8 +102,14 @@ func (e *CurvePoint) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	var buf []byte
-	buf = append(buf, point.X...)
-	buf = append(buf, point.Y...)
+	if len(point.X.Bytes()) > NumBytesCurvePoint/2 {
+		return fmt.Errorf("curve point x-coordinate is too big")
+	}
+	if len(point.Y.Bytes()) > NumBytesCurvePoint/2 {
+		return fmt.Errorf("curve point y-coordinate is too big")
+	}
+	var buf = make([]byte, NumBytesCurvePoint)
+	point.X.FillBytes(buf[:NumBytesCurvePoint/2])
+	point.Y.FillBytes(buf[NumBytesCurvePoint/2:])
 	return e.UnmarshalBinary(buf)
 }

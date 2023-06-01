@@ -22,8 +22,8 @@ func goCurvePoint(v js.Value) (*arith.CurvePoint, error) {
 		return nil, err
 	}
 
-	xJSON := "\"" + v.Get("x").String() + "\""
-	yJSON := "\"" + v.Get("y").String() + "\""
+	xJSON := v.Get("x").String()
+	yJSON := v.Get("y").String()
 	pkJSON := "{\"x\":" + xJSON + ",\"y\":" + yJSON + "}"
 
 	res := new(arith.CurvePoint)
@@ -39,7 +39,7 @@ func goScalar(v js.Value) (*arith.Scalar, error) {
 		return nil, err
 	}
 
-	sJSON := "\"" + v.String() + "\""
+	sJSON := v.String()
 	res := new(arith.Scalar)
 	err := json.Unmarshal([]byte(sJSON), res)
 	if err != nil {
