@@ -1,6 +1,6 @@
 const { expect } = require("chai");
 const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
-const { loadEVotingBackend } = require("../../backend/wasm/assets/wasm_exec_node")
+const { loadEVotingBackend } = require("../../../backend/wasm/assets/wasm_exec_node")
 
 const Status = {
     INIT: 0,
