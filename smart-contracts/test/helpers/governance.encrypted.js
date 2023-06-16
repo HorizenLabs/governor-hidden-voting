@@ -1,6 +1,5 @@
-const { GovernorHelper } = require('./governance.js');
-const { forward } = require('./time.js');
-const Enums = require('./enums.js');
+const { GovernorHelper } = require('../../lib/openzeppelin-contracts/test/helpers/governance.js');
+const { forward } = require('../../lib/openzeppelin-contracts/test/helpers/time.js');
 
 function concatOpts(args, opts = null) {
     return opts ? args.concat(opts) : args;
@@ -9,6 +8,11 @@ function concatOpts(args, opts = null) {
 function stringifyPk(pk) {
     return "x:" + pk.x + ",y:" + pk.y;
 }
+
+VoteType = {
+    Against: 0,
+    For: 1,
+};
 
 class GovernorEncryptedHelper extends GovernorHelper {
     constructor(governor) {
@@ -26,12 +30,12 @@ class GovernorEncryptedHelper extends GovernorHelper {
         const proposal = this.currentProposal;
 
         var encryptedVote, proof;
-        if (vote.vote == Enums.VoteType.Against || vote.vote == Enums.VoteType.For) {
+        if (vote.vote == VoteType.Against || vote.vote == VoteType.For) {
             const pk = vote.pk ? vote.pk : await this.governor.getPk(proposal.id);
             ({ encryptedVote, proof } = await goEncryptVoteWithProof(vote.vote, pk));
         } else {
             const { keyPair } = await goNewKeyPairWithProof();
-            ({ encryptedVote, proof } = await goEncryptVoteWithProof(Enums.VoteType.Against, keyPair.pk));
+            ({ encryptedVote, proof } = await goEncryptVoteWithProof(VoteType.Against, keyPair.pk));
         }
         return this.governor.castEncryptedVote(...concatOpts([proposal.id, encryptedVote, proof], opts));
     }
@@ -55,7 +59,7 @@ class GovernorEncryptedHelper extends GovernorHelper {
         var result, proof;
         if (args.fake) {
             const { keyPair } = await goNewKeyPairWithProof();
-            const { encryptedVote } = await goEncryptVoteWithProof(Enums.VoteType.Against, keyPair.pk);
+            const { encryptedVote } = await goEncryptVoteWithProof(VoteType.Against, keyPair.pk);
             ({ result, proof } = await goDecryptTallyWithProof(encryptedVote, 1, keyPair));
         } else {
             const encryptedTally = await this.governor.getTally(proposal.id);
@@ -72,5 +76,5 @@ class GovernorEncryptedHelper extends GovernorHelper {
 }
 
 module.exports = {
-    GovernorEncryptedHelper,
+    GovernorEncryptedHelper, VoteType
 };

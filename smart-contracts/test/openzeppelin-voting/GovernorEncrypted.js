@@ -1,8 +1,8 @@
 const { constants, expectEvent, expectRevert } = require('@openzeppelin/test-helpers');
 const { expect } = require('chai');
-const Enums = require('../helpers/enums');
-const { GovernorEncryptedHelper } = require('../helpers/governance.encrypted');
-const { clockFromReceipt } = require('../helpers/time');
+const { Enums } = require('../../lib/openzeppelin-contracts/test/helpers/enums');
+const { GovernorEncryptedHelper, VoteType } = require('../helpers/governance.encrypted');
+const { clockFromReceipt } = require('../../lib/openzeppelin-contracts/test/helpers/time');
 const { loadEVotingBackend } = require('../../../backend/wasm/assets/wasm_exec_node');
 
 const Governor = artifacts.require('$GovernorEncryptedMock');
@@ -105,7 +105,7 @@ contract('GovernorEncrytped', function (accounts) {
 
         await this.helper.waitForSnapshot();
 
-        expectEvent(await this.helper.vote({ vote: Enums.VoteType.For }, { from: voter1 }),
+        expectEvent(await this.helper.vote({ vote: VoteType.For }, { from: voter1 }),
           'VoteCastWithParams',
           {
             voter: voter1,
@@ -115,7 +115,7 @@ contract('GovernorEncrytped', function (accounts) {
           },
         );
 
-        expectEvent(await this.helper.vote({ vote: Enums.VoteType.Against }, { from: voter2 }),
+        expectEvent(await this.helper.vote({ vote: VoteType.Against }, { from: voter2 }),
           'VoteCastWithParams',
           {
             voter: voter2,
@@ -125,7 +125,7 @@ contract('GovernorEncrytped', function (accounts) {
           }
         );
 
-        expectEvent(await this.helper.vote({ vote: Enums.VoteType.For }, { from: voter3 }),
+        expectEvent(await this.helper.vote({ vote: VoteType.For }, { from: voter3 }),
           'VoteCastWithParams',
           {
             voter: voter3,
@@ -135,7 +135,7 @@ contract('GovernorEncrytped', function (accounts) {
           }
         );
 
-        expectEvent(await this.helper.vote({ vote: Enums.VoteType.Against }, { from: voter4 }),
+        expectEvent(await this.helper.vote({ vote: VoteType.Against }, { from: voter4 }),
           'VoteCastWithParams',
           {
             voter: voter4,
@@ -186,7 +186,7 @@ contract('GovernorEncrytped', function (accounts) {
         // Run proposal
         await this.helper.propose();
         await this.helper.waitForSnapshot();
-        await this.helper.vote({ vote: Enums.VoteType.For }, { from: voter1 });
+        await this.helper.vote({ vote: VoteType.For }, { from: voter1 });
         await this.helper.waitForVotingDeadline();
         await this.helper.tally();
         await this.helper.waitForDeadline();
@@ -213,7 +213,7 @@ contract('GovernorEncrytped', function (accounts) {
         describe('on vote', function () {
           it('if proposal does not exist', async function () {
             await expectRevert(
-              this.helper.vote({ vote: Enums.VoteType.For }, { from: voter1 }),
+              this.helper.vote({ vote: VoteType.For }, { from: voter1 }),
               'Governor: unknown proposal id',
             );
           });
@@ -221,7 +221,7 @@ contract('GovernorEncrytped', function (accounts) {
           it('if voting has not started', async function () {
             await this.helper.propose();
             await expectRevert(
-              this.helper.vote({ vote: Enums.VoteType.For }, { from: voter1 }),
+              this.helper.vote({ vote: VoteType.For }, { from: voter1 }),
               'Governor: vote not currently active',
             );
           });
@@ -238,9 +238,9 @@ contract('GovernorEncrytped', function (accounts) {
           it('if vote was already casted', async function () {
             await this.helper.propose();
             await this.helper.waitForSnapshot();
-            await this.helper.vote({ vote: Enums.VoteType.For }, { from: voter1 });
+            await this.helper.vote({ vote: VoteType.For }, { from: voter1 });
             await expectRevert(
-              this.helper.vote({ vote: Enums.VoteType.For }, { from: voter1 }),
+              this.helper.vote({ vote: VoteType.For }, { from: voter1 }),
               'GovernorCountingEncrypted: vote already cast',
             );
           });
@@ -249,7 +249,7 @@ contract('GovernorEncrytped', function (accounts) {
             await this.helper.propose();
             await this.helper.waitForDeadline();
             await expectRevert(
-              this.helper.vote({ vote: Enums.VoteType.For }, { from: voter1 }),
+              this.helper.vote({ vote: VoteType.For }, { from: voter1 }),
               'Governor: vote not currently active',
             );
           });
@@ -258,7 +258,7 @@ contract('GovernorEncrytped', function (accounts) {
             await this.helper.propose();
             await this.helper.waitForVotingDeadline();
             await expectRevert(
-              this.helper.vote({ vote: Enums.VoteType.For }, { from: voter1 }),
+              this.helper.vote({ vote: VoteType.For }, { from: voter1 }),
               'GovernorCountingEncrypted: voting is over',
             );
           });
@@ -272,7 +272,7 @@ contract('GovernorEncrytped', function (accounts) {
           it('if invalid proof is sent', async function () {
             await this.helper.propose();
             await this.helper.waitForSnapshot();
-            await this.helper.vote({ vote: Enums.VoteType.For }, { from: voter3 });
+            await this.helper.vote({ vote: VoteType.For }, { from: voter3 });
             await this.helper.waitForVotingDeadline();
             await expectRevert(
               this.helper.tally({ fake: true }),
@@ -283,7 +283,7 @@ contract('GovernorEncrytped', function (accounts) {
           it('if tallying has not started', async function () {
             await this.helper.propose();
             await this.helper.waitForSnapshot();
-            await this.helper.vote({ vote: Enums.VoteType.For }, { from: voter3 });
+            await this.helper.vote({ vote: VoteType.For }, { from: voter3 });
             await expectRevert(
               this.helper.tally(),
               'GovernorCountingEncrypted: tallying not currently active',
@@ -293,7 +293,7 @@ contract('GovernorEncrytped', function (accounts) {
           it('if tallying is over', async function () {
             await this.helper.propose();
             await this.helper.waitForSnapshot();
-            await this.helper.vote({ vote: Enums.VoteType.For }, { from: voter3 });
+            await this.helper.vote({ vote: VoteType.For }, { from: voter3 });
             await this.helper.waitForDeadline();
             await expectRevert(
               this.helper.tally(),
@@ -310,7 +310,7 @@ contract('GovernorEncrytped', function (accounts) {
           it('if quorum is not reached', async function () {
             await this.helper.propose();
             await this.helper.waitForSnapshot();
-            await this.helper.vote({ vote: Enums.VoteType.For }, { from: voter3 });
+            await this.helper.vote({ vote: VoteType.For }, { from: voter3 });
             await this.helper.waitForVotingDeadline();
             await this.helper.tally();
             await this.helper.waitForDeadline();
@@ -320,7 +320,7 @@ contract('GovernorEncrytped', function (accounts) {
           it('if score not reached', async function () {
             await this.helper.propose();
             await this.helper.waitForSnapshot();
-            await this.helper.vote({ vote: Enums.VoteType.Against }, { from: voter1 });
+            await this.helper.vote({ vote: VoteType.Against }, { from: voter1 });
             await this.helper.waitForVotingDeadline();
             await this.helper.tally();
             await this.helper.waitForDeadline();
@@ -330,7 +330,7 @@ contract('GovernorEncrytped', function (accounts) {
           it('if tallying has not been performed', async function () {
             await this.helper.propose();
             await this.helper.waitForSnapshot();
-            await this.helper.vote({ vote: Enums.VoteType.For }, { from: voter1 });
+            await this.helper.vote({ vote: VoteType.For }, { from: voter1 });
             await this.helper.waitForDeadline();
             await expectRevert(this.helper.execute(), 'Governor: proposal not successful');
           });
@@ -348,7 +348,7 @@ contract('GovernorEncrytped', function (accounts) {
 
             await this.helper.propose();
             await this.helper.waitForSnapshot();
-            await this.helper.vote({ vote: Enums.VoteType.For }, { from: voter1 });
+            await this.helper.vote({ vote: VoteType.For }, { from: voter1 });
             await this.helper.waitForVotingDeadline();
             await this.helper.tally();
             await this.helper.waitForDeadline();
@@ -368,7 +368,7 @@ contract('GovernorEncrytped', function (accounts) {
 
             await this.helper.propose();
             await this.helper.waitForSnapshot();
-            await this.helper.vote({ vote: Enums.VoteType.For }, { from: voter1 });
+            await this.helper.vote({ vote: VoteType.For }, { from: voter1 });
             await this.helper.waitForVotingDeadline();
             await this.helper.tally();
             await this.helper.waitForDeadline();
@@ -378,7 +378,7 @@ contract('GovernorEncrytped', function (accounts) {
           it('if proposal was already executed', async function () {
             await this.helper.propose();
             await this.helper.waitForSnapshot();
-            await this.helper.vote({ vote: Enums.VoteType.For }, { from: voter1 });
+            await this.helper.vote({ vote: VoteType.For }, { from: voter1 });
             await this.helper.waitForVotingDeadline();
             await this.helper.tally();
             await this.helper.waitForDeadline();
@@ -420,7 +420,7 @@ contract('GovernorEncrytped', function (accounts) {
         it('Succeeded', async function () {
           await this.helper.propose();
           await this.helper.waitForSnapshot();
-          await this.helper.vote({ vote: Enums.VoteType.For }, { from: voter1 });
+          await this.helper.vote({ vote: VoteType.For }, { from: voter1 });
           await this.helper.waitForVotingDeadline();
           await this.helper.tally();
           await this.helper.waitForDeadline();
@@ -432,7 +432,7 @@ contract('GovernorEncrytped', function (accounts) {
         it('Executed', async function () {
           await this.helper.propose();
           await this.helper.waitForSnapshot();
-          await this.helper.vote({ vote: Enums.VoteType.For }, { from: voter1 });
+          await this.helper.vote({ vote: VoteType.For }, { from: voter1 });
           await this.helper.waitForVotingDeadline();
           await this.helper.tally();
           await this.helper.waitForDeadline();
