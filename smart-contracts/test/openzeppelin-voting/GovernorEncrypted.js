@@ -1,6 +1,6 @@
 const { constants, expectEvent, expectRevert } = require('@openzeppelin/test-helpers');
 const { expect } = require('chai');
-const { Enums } = require('../../lib/openzeppelin-contracts/test/helpers/enums');
+const { ProposalState } = require('../../lib/openzeppelin-contracts/test/helpers/enums');
 const { GovernorEncryptedHelper, VoteType } = require('../helpers/governance.encrypted');
 const { clockFromReceipt } = require('../../lib/openzeppelin-contracts/test/helpers/time');
 const { loadEVotingBackend } = require('../../../backend/wasm/assets/wasm_exec_node');
@@ -400,11 +400,11 @@ contract('GovernorEncrytped', function (accounts) {
 
         it('Pending & Active', async function () {
           await this.helper.propose();
-          expect(await this.mock.state(this.proposal.id)).to.be.bignumber.equal(Enums.ProposalState.Pending);
+          expect(await this.mock.state(this.proposal.id)).to.be.bignumber.equal(ProposalState.Pending);
           await this.helper.waitForSnapshot();
-          expect(await this.mock.state(this.proposal.id)).to.be.bignumber.equal(Enums.ProposalState.Pending);
+          expect(await this.mock.state(this.proposal.id)).to.be.bignumber.equal(ProposalState.Pending);
           await this.helper.waitForSnapshot(+1);
-          expect(await this.mock.state(this.proposal.id)).to.be.bignumber.equal(Enums.ProposalState.Active);
+          expect(await this.mock.state(this.proposal.id)).to.be.bignumber.equal(ProposalState.Active);
         });
 
         it('Defeated', async function () {
@@ -412,9 +412,9 @@ contract('GovernorEncrytped', function (accounts) {
           await this.helper.waitForVotingDeadline();
           await this.helper.tally();
           await this.helper.waitForDeadline();
-          expect(await this.mock.state(this.proposal.id)).to.be.bignumber.equal(Enums.ProposalState.Active);
+          expect(await this.mock.state(this.proposal.id)).to.be.bignumber.equal(ProposalState.Active);
           await this.helper.waitForDeadline(+1);
-          expect(await this.mock.state(this.proposal.id)).to.be.bignumber.equal(Enums.ProposalState.Defeated);
+          expect(await this.mock.state(this.proposal.id)).to.be.bignumber.equal(ProposalState.Defeated);
         });
 
         it('Succeeded', async function () {
@@ -424,9 +424,9 @@ contract('GovernorEncrytped', function (accounts) {
           await this.helper.waitForVotingDeadline();
           await this.helper.tally();
           await this.helper.waitForDeadline();
-          expect(await this.mock.state(this.proposal.id)).to.be.bignumber.equal(Enums.ProposalState.Active);
+          expect(await this.mock.state(this.proposal.id)).to.be.bignumber.equal(ProposalState.Active);
           await this.helper.waitForDeadline(+1);
-          expect(await this.mock.state(this.proposal.id)).to.be.bignumber.equal(Enums.ProposalState.Succeeded);
+          expect(await this.mock.state(this.proposal.id)).to.be.bignumber.equal(ProposalState.Succeeded);
         });
 
         it('Executed', async function () {
@@ -436,9 +436,9 @@ contract('GovernorEncrytped', function (accounts) {
           await this.helper.waitForVotingDeadline();
           await this.helper.tally();
           await this.helper.waitForDeadline();
-          expect(await this.mock.state(this.proposal.id)).to.be.bignumber.equal(Enums.ProposalState.Active);
+          expect(await this.mock.state(this.proposal.id)).to.be.bignumber.equal(ProposalState.Active);
           await this.helper.execute();
-          expect(await this.mock.state(this.proposal.id)).to.be.bignumber.equal(Enums.ProposalState.Executed);
+          expect(await this.mock.state(this.proposal.id)).to.be.bignumber.equal(ProposalState.Executed);
         });
       });
     });
