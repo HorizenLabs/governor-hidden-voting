@@ -12,17 +12,20 @@ const TOKENS = [
   { Token: artifacts.require('$ERC20VotesMock'), mode: 'blocknumber' },
 ];
 
+const WrappedToken = artifacts.require('$DiscretizedVotes');
+
 contract('GovernorEncrytped', function (accounts) {
   const [owner, proposer, voter1, voter2, voter3, voter4] = accounts;
 
   const name = 'OZ-Governor';
   const tokenName = 'MockToken';
   const tokenSymbol = 'MTKN';
-  const tokenSupply = web3.utils.toWei('100', 'wei');
+  const tokenSupply = web3.utils.toWei('100', 'ether');
   const votingDelay = web3.utils.toBN(4);
   const votingPeriod = web3.utils.toBN(16);
   const tallyingPeriod = web3.utils.toBN(4);
-  const value = web3.utils.toWei('1', 'wei');
+  const value = web3.utils.toWei('1', 'ether');
+  const minWeight = web3.utils.toWei('1', 'ether');
 
   for (const { mode, Token } of TOKENS) {
     describe(`using ${Token._json.contractName}`, function () {
@@ -30,9 +33,10 @@ contract('GovernorEncrytped', function (accounts) {
         await loadEVotingBackend();
         this.chainId = await web3.eth.getChainId();
         this.token = await Token.new(tokenName, tokenSymbol, tokenName);
+        this.wrappedToken = await WrappedToken.new(this.token.address, minWeight);
         this.mock = await Governor.new(
           name, // name
-          this.token.address, // tokenAddress
+          this.wrappedToken.address, // tokenAddress
           10, // quorumNumeratorValue
           votingDelay, // initialVotingDelay
           votingPeriod, // initialVotingPeriod
@@ -46,10 +50,10 @@ contract('GovernorEncrytped', function (accounts) {
         await web3.eth.sendTransaction({ from: owner, to: this.mock.address, value });
 
         await this.token.$_mint(owner, tokenSupply);
-        await this.helper.delegate({ token: this.token, to: voter1, value: web3.utils.toWei('10', 'wei') }, { from: owner });
-        await this.helper.delegate({ token: this.token, to: voter2, value: web3.utils.toWei('7', 'wei') }, { from: owner });
-        await this.helper.delegate({ token: this.token, to: voter3, value: web3.utils.toWei('5', 'wei') }, { from: owner });
-        await this.helper.delegate({ token: this.token, to: voter4, value: web3.utils.toWei('2', 'wei') }, { from: owner });
+        await this.helper.delegate({ token: this.token, to: voter1, value: web3.utils.toWei('10500', 'milliether') }, { from: owner });
+        await this.helper.delegate({ token: this.token, to: voter2, value: web3.utils.toWei('7200', 'milliether') }, { from: owner });
+        await this.helper.delegate({ token: this.token, to: voter3, value: web3.utils.toWei('5350', 'milliether') }, { from: owner });
+        await this.helper.delegate({ token: this.token, to: voter4, value: web3.utils.toWei('2720', 'milliether') }, { from: owner });
 
         this.proposal = this.helper.setProposal(
           [
@@ -65,7 +69,7 @@ contract('GovernorEncrytped', function (accounts) {
 
       it('deployment check', async function () {
         expect(await this.mock.name()).to.be.equal(name);
-        expect(await this.mock.token()).to.be.equal(this.token.address);
+        expect(await this.mock.token()).to.be.equal(this.wrappedToken.address);
         expect(await this.mock.votingDelay()).to.be.bignumber.equal(votingDelay);
         expect(await this.mock.votingPeriod()).to.be.bignumber.equal(votingPeriod);
         expect(await this.mock.quorum(0)).to.be.bignumber.equal('0');
@@ -111,7 +115,7 @@ contract('GovernorEncrytped', function (accounts) {
             voter: voter1,
             support: web3.utils.toBN(0),
             reason: '',
-            weight: web3.utils.toWei('10', 'wei'),
+            weight: web3.utils.toBN('10'),
           },
         );
 
@@ -121,7 +125,7 @@ contract('GovernorEncrytped', function (accounts) {
             voter: voter2,
             support: web3.utils.toBN(0),
             reason: '',
-            weight: web3.utils.toWei('7', 'wei'),
+            weight: web3.utils.toBN('7'),
           }
         );
 
@@ -131,7 +135,7 @@ contract('GovernorEncrytped', function (accounts) {
             voter: voter3,
             support: web3.utils.toBN(0),
             reason: '',
-            weight: web3.utils.toWei('5', 'wei'),
+            weight: web3.utils.toBN('5'),
           }
         );
 
@@ -141,7 +145,7 @@ contract('GovernorEncrytped', function (accounts) {
             voter: voter4,
             support: web3.utils.toBN(0),
             reason: '',
-            weight: web3.utils.toWei('2', 'wei'),
+            weight: web3.utils.toBN('2'),
           }
         );
 
