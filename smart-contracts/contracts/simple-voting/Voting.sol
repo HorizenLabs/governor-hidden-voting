@@ -2,7 +2,8 @@
 
 pragma solidity ^0.8.9;
 
-import "./Crypto.sol";
+import "../cryptography/Cryptography.sol";
+import "../cryptography/BN256Group.sol";
 
 /// @title A basic contract for private voting.
 /// @notice This contract implements a very basic logic:
@@ -13,7 +14,7 @@ import "./Crypto.sol";
 /// - There is a single tallying entity in control of the secret key behind the voting event
 ///   public key. This entity can easily deanonymize individual votes.
 /// - Only yes/no votes are possible.
-contract Voting {
+contract Voting is Cryptography, BN256Group {
     enum Status {
         INIT,
         DECLARED,
@@ -29,9 +30,9 @@ contract Voting {
     Status public status;
     /// @notice The EC-ElGamal public key of the voting event, used for encrypting votes.
     /// The corresponding secret key is known by the authority responsible for tallying.
-    CurvePoint pk;
+    GroupElement pk;
     /// @notice A running encrypted tally of the votes cast so far.
-    EncryptedTally encryptedTally;
+    EncryptedVote encryptedTally;
     /// @notice The result (i.e. number of yes) of the voting event. Becomes available after
     /// tallying.
     uint result;
@@ -42,15 +43,16 @@ contract Voting {
     /// prevent possible attacks on ballot privacy.
     mapping(bytes32 => bool) proofHashAlreadySeen;
 
-    event VotingStarted(CurvePoint pk);
+    event VotingStarted(GroupElement pk);
     event EncryptedVoteCast(address voter);
-    event VotingStopped(EncryptedTally tally);
+    event VotingStopped(EncryptedVote tally);
     event Result(uint result);
 
     error Unauthorized(address caller);
     error WrongStatus(Status status);
     error DoubleVoting(address caller);
     error DoubleProof(address caller);
+    error ProofVerificationFailure();
 
     constructor() {
         authority = msg.sender;
@@ -63,7 +65,7 @@ contract Voting {
     /// @param proof The proof of knowledge of the secret key behind pk_. This is generated
     /// off-chain by the cryptographic backend.
     function declarePk(
-        CurvePoint calldata pk_,
+        GroupElement calldata pk_,
         ProofSkKnowledge calldata proof
     ) external {
         if (status != Status.INIT) {
@@ -72,7 +74,9 @@ contract Voting {
         if (msg.sender != authority) {
             revert Unauthorized(msg.sender);
         }
-        verifySkKnowledge(proof, pk_);
+        if (!_verifySkKnowledge(proof, pk_)) {
+            revert ProofVerificationFailure();
+        }
 
         pk = pk_;
         status = Status.DECLARED;
@@ -87,7 +91,6 @@ contract Voting {
             revert Unauthorized(msg.sender);
         }
 
-        initTally(encryptedTally);
         status = Status.VOTING;
 
         emit VotingStarted(pk);
@@ -118,9 +121,11 @@ contract Voting {
         if (proofHashAlreadySeen[proofHash]) {
             revert DoubleProof(msg.sender);
         }
-        verifyVoteWellFormedness(proof, vote, pk);
+        if (!_verifyVoteWellFormedness(proof, vote, pk)) {
+            revert ProofVerificationFailure();
+        }
 
-        updateTally(encryptedTally, vote);
+        encryptedTally = _addVotes(encryptedTally, vote);
         addressAlreadyVoted[msg.sender] = true;
         proofHashAlreadySeen[proofHash] = true;
 
@@ -136,7 +141,6 @@ contract Voting {
             revert Unauthorized(msg.sender);
         }
 
-        finalizeTally(encryptedTally);
         status = Status.TALLYING;
 
         emit VotingStopped(encryptedTally);
@@ -155,7 +159,11 @@ contract Voting {
         if (status != Status.TALLYING) {
             revert WrongStatus(status);
         }
-        verifyCorrectDecryption(proof, encryptedTally.vote, decryptedTally, pk);
+        if (
+            !_verifyCorrectDecryption(proof, encryptedTally, decryptedTally, pk)
+        ) {
+            revert ProofVerificationFailure();
+        }
 
         result = decryptedTally;
         status = Status.FINI;
@@ -165,7 +173,7 @@ contract Voting {
 
     /// @notice A getter for the public key of the voting event. Can only be called after the
     /// public key has been declared.
-    function getPk() external view returns (CurvePoint memory pk_) {
+    function getPk() external view returns (GroupElement memory pk_) {
         if (status == Status.INIT) {
             revert WrongStatus(status);
         }

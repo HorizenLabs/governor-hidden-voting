@@ -7,7 +7,6 @@ import (
 	"io"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -100,18 +99,20 @@ func (e *Challenge) UnmarshalBinary(m []byte) error {
 }
 
 func (e Challenge) MarshalJSON() ([]byte, error) {
-	bytesE, err := e.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(hexutil.Bytes(bytesE))
+	return e.val.MarshalJSON()
 }
 
 func (e *Challenge) UnmarshalJSON(data []byte) error {
-	var bytesE hexutil.Bytes
-	err := json.Unmarshal(data, &bytesE)
+	var c = new(big.Int)
+	err := json.Unmarshal(data, c)
 	if err != nil {
 		return err
 	}
-	return e.UnmarshalBinary(bytesE)
+	if len(c.Bytes()) > NumBytesChallenge {
+		return fmt.Errorf("challenge is too big")
+	}
+	var buf = make([]byte, NumBytesChallenge)
+	c.FillBytes(buf)
+
+	return e.UnmarshalBinary(buf)
 }
