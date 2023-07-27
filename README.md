@@ -31,10 +31,18 @@ If cloning has already been performed without the `--recurse-submodules` option,
 git submodule update --init --recursive
 ```
 
+## Dependencies
+- The cryptographic backend needs a working [Go installation](https://go.dev/doc/install)
+- Running javascript smart contract tests requires [Node.js and npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
+
 ## Building
 The javascript tests of the smart contracts invoke the Go backend via the wasm wrapper, which can be built by going to the `backend/wasm` directory and issuing the command
 ```
 make
+```
+Moreover, hardhat should be installed by going to the `smart-contracts` directory and issuing the command
+```
+npm install --save-dev hardhat
 ```
 
 ## Testing
@@ -58,12 +66,5 @@ For the moment, the implementation has the following limitations:
 - only yes-no voting is supported
 - a single authority is responsible for performing tallying
 
-These limitations will be lifted in future updates of the project by
-- introducing support for abstain
-- introducing support for threshold decryption for the tallying phase
-
 ## Security
 This code is experimental, and has not yet been audited. Using it in a production system is not recommended.
-
-## License
-TODO
