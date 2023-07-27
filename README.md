@@ -66,4 +66,4 @@ For the moment, the implementation has the following limitations:
 - a single authority is responsible for performing tallying
 
 ## Security
-This code is experimental, and has not yet been audited. Using it in a production system is not recommended.
+This code has not yet been audited, use it at your own risk.
