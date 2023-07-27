@@ -13,7 +13,6 @@ The protocol is based on the Helios voting system ([https://eprint.iacr.org/2016
 
   The functionality of the Go backend is accessible:
     * directly via the Go modules [`crypto`](./backend/crypto/) and [`arith`](./backend/arith/)
-    * as a gRPC service in [`proving-grounds`](./backend/proving-grounds/)
     * as a WebAssembly instance in [`wasm`](./backend/wasm/)
 - [`smart-contracts/contracts`](./smart-contracts/), a set of Solidity smart contracts
     * [`cryptography`](./smart-contracts/contracts/cryptography/) contains a contract to verify the zk-proofs required by the protocol.
