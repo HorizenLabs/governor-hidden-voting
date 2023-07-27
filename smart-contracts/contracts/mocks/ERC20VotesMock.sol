@@ -1,5 +1,4 @@
-// SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts (last updated v4.8.1) (token/ERC20/extensions/ERC20Votes.sol)
+// SPDX-License-Identifier: Apache-2.0
 
 pragma solidity ^0.8.0;
 
