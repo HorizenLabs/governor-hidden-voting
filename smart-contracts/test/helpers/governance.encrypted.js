@@ -53,6 +53,12 @@ class GovernorEncryptedHelper extends GovernorHelper {
         return this.governor.initialize(...concatOpts([args.pk, proof], opts));
     }
 
+    async updateCurrentPk(args = {}, opts = null) {
+        const key = stringifyPk({ x: args.pk.x, y: args.pk.y });
+        const proof = this.keyStore.get(key).proof;
+        return this.governor.updateCurrentPk(...concatOpts([args.pk, proof], opts));
+    }
+
     async tally(args = {}, opts = null) {
         const proposal = this.currentProposal;
 
@@ -76,5 +82,5 @@ class GovernorEncryptedHelper extends GovernorHelper {
 }
 
 module.exports = {
-    GovernorEncryptedHelper, VoteType
+    GovernorEncryptedHelper, VoteType, stringifyPk
 };

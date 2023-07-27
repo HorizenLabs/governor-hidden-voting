@@ -1,7 +1,7 @@
 const { constants, expectEvent, expectRevert } = require('@openzeppelin/test-helpers');
 const { expect } = require('chai');
 const { ProposalState } = require('../../lib/openzeppelin-contracts/test/helpers/enums');
-const { GovernorEncryptedHelper, VoteType } = require('../helpers/governance.encrypted');
+const { GovernorEncryptedHelper, VoteType, stringifyPk } = require('../helpers/governance.encrypted');
 const { clockFromReceipt } = require('../../lib/openzeppelin-contracts/test/helpers/time');
 const { loadEVotingBackend } = require('../../../backend/wasm/assets/wasm_exec_node');
 
@@ -162,55 +162,81 @@ contract('GovernorEncrytped', function (accounts) {
         expect(await web3.eth.getBalance(this.receiver.address)).to.be.bignumber.equal(value);
       });
 
-      it('send ethers', async function () {
-        const empty = web3.utils.toChecksumAddress(web3.utils.randomHex(20));
-
-        this.proposal = this.helper.setProposal(
-          [
-            {
-              target: empty,
-              value,
-            },
-          ],
-          '<proposal description>',
-        );
-
-        // Before
-        expect(await web3.eth.getBalance(this.mock.address)).to.be.bignumber.equal(value);
-        expect(await web3.eth.getBalance(empty)).to.be.bignumber.equal('0');
-
-        // Initialize pk
-        const pk = await this.helper.addKeyPair();
-        await this.helper.initialize({ pk });
-
-        // Run proposal
-        await this.helper.propose();
-        await this.helper.waitForSnapshot();
-        await this.helper.vote({ vote: VoteType.For }, { from: voter1 });
-        await this.helper.waitForVotingDeadline();
-        await this.helper.tally();
-        await this.helper.waitForDeadline();
-        await this.helper.execute();
-
-        // After
-        expect(await web3.eth.getBalance(this.mock.address)).to.be.bignumber.equal('0');
-        expect(await web3.eth.getBalance(empty)).to.be.bignumber.equal(value);
+      describe('UpdateablePublicKey', function () {
+        describe('initialize', function () {
+          it('should set pk to correct value', async function () {
+            const pk = await this.helper.addKeyPair();
+            await this.helper.initialize({ pk });
+            const pkCall = await this.mock.$_getCurrentPk.call();
+            expect(pkCall.x).to.be.equal(pk.x);
+            expect(pkCall.y).to.be.equal(pk.y);
+          });
+          it('should revert if invoked twice', async function () {
+            const pk = await this.helper.addKeyPair();
+            await this.helper.initialize({ pk });
+            await expectRevert(this.helper.initialize({ pk }), 'UpdateablePublicKey: contract already initialized');
+          });
+          it('should revert if caller unauthorized', async function () {
+            const pk = await this.helper.addKeyPair();
+            await expectRevert(this.helper.initialize({ pk }, { from: voter1 }), 'Ownable: caller is not the owner');
+          });
+        });
+        describe('updateCurrentPk', function () {
+          it('should be protected by onlyGovernance', async function () {
+            const pk = await this.helper.addKeyPair();
+            await this.helper.initialize({ pk });
+            const pkNew = await this.helper.addKeyPair();
+            await expectRevert(this.helper.updateCurrentPk({ pk: pkNew }), 'Governor: onlyGovernance');
+          });
+          it('should be possible via a governance proposal', async function () {
+            const pk = await this.helper.addKeyPair();
+            await this.helper.initialize({ pk });
+            const pkNew = await this.helper.addKeyPair();
+            const key = stringifyPk({ x: pkNew.x, y: pkNew.y });
+            const proof = this.helper.keyStore.get(key).proof;
+            this.proposal = this.helper.setProposal(
+              [
+                {
+                  target: this.mock.address,
+                  data: this.mock.contract.methods.updateCurrentPk(pkNew, proof).encodeABI(),
+                  value: web3.utils.toBN('0'),
+                },
+              ],
+              'change pk',
+            );
+            await this.helper.propose({ from: proposer });
+            await this.helper.waitForSnapshot();
+            await this.helper.vote({ vote: VoteType.For }, { from: voter1 });
+            await this.helper.waitForVotingDeadline();
+            await this.helper.tally();
+            await this.helper.waitForDeadline();
+            await this.helper.execute();
+            const pkCall = await this.mock.$_getCurrentPk.call();
+            expect(pkCall.x).to.be.equal(pkNew.x);
+            expect(pkCall.y).to.be.equal(pkNew.y);
+          });
+        });
       });
 
       describe('should revert', function () {
-        beforeEach(async function () {
-          const pk = await this.helper.addKeyPair();
-          await this.helper.initialize({ pk });
-        });
-
         describe('on propose', function () {
+          it('if pk is not initialized', async function () {
+            await expectRevert(this.helper.propose(), 'UpdateablePublicKey: contract should be initialized');
+          });
+
           it('if proposal already exists', async function () {
+            const pk = await this.helper.addKeyPair();
+            await this.helper.initialize({ pk });
             await this.helper.propose();
             await expectRevert(this.helper.propose(), 'Governor: proposal already exists');
           });
         });
 
         describe('on vote', function () {
+          beforeEach(async function () {
+            const pk = await this.helper.addKeyPair();
+            await this.helper.initialize({ pk });
+          });
           it('if proposal does not exist', async function () {
             await expectRevert(
               this.helper.vote({ vote: VoteType.For }, { from: voter1 }),
@@ -265,6 +291,10 @@ contract('GovernorEncrytped', function (accounts) {
         });
 
         describe('on tally', function () {
+          beforeEach(async function () {
+            const pk = await this.helper.addKeyPair();
+            await this.helper.initialize({ pk });
+          });
           it('if proposal does not exist', async function () {
             await expectRevert(this.helper.tally({ fake: true }), 'Governor: unknown proposal id');
           });
@@ -303,6 +333,10 @@ contract('GovernorEncrytped', function (accounts) {
         });
 
         describe('on execute', function () {
+          beforeEach(async function () {
+            const pk = await this.helper.addKeyPair();
+            await this.helper.initialize({ pk });
+          });
           it('if proposal does not exist', async function () {
             await expectRevert(this.helper.execute(), 'Governor: unknown proposal id');
           });
@@ -387,6 +421,56 @@ contract('GovernorEncrytped', function (accounts) {
           });
         });
       });
+
+      describe('disabled methods', function () {
+        beforeEach(async function () {
+          const pk = await this.helper.addKeyPair();
+          await this.helper.initialize({ pk });
+          await this.helper.propose();
+          await this.helper.waitForSnapshot();
+          this.support = web3.utils.toBN('0');
+          this.reason = "<reason>";
+          this.params = [];
+          this.v = '0x1'
+          this.r = '0x1';
+          this.s = '0x1';
+        });
+
+        it('castVote', async function () {
+          await expectRevert(
+            this.mock.castVote(this.helper.currentProposal.id, this.support),
+            'GovernorCountingEncrypted: castVote unavailable'
+          );
+        });
+
+        it('castVoteWithReason', async function () {
+          await expectRevert(
+            this.mock.castVoteWithReason(this.helper.currentProposal.id, this.support, this.reason),
+            'GovernorCountingEncrypted: castVoteWithReason unavailable'
+          );
+        });
+
+        it('castVoteWithReasonAndParams', async function () {
+          await expectRevert(
+            this.mock.castVoteWithReasonAndParams(this.helper.currentProposal.id, this.support, this.reason, this.params),
+            'GovernorCountingEncrypted: castVoteWithReasonAndParams unavailable'
+          );
+        });
+
+        it('castVoteBySig', async function () {
+          await expectRevert(
+            this.mock.castVoteBySig(this.helper.currentProposal.id, this.support, this.v, this.r, this.s),
+            'GovernorCountingEncrypted: castVoteBySig unavailable'
+          );
+        });
+
+        it('castVoteWithReasonAndParamsBySig', async function () {
+          await expectRevert(
+            this.mock.castVoteWithReasonAndParamsBySig(this.helper.currentProposal.id, this.support, this.reason, this.params, this.v, this.r, this.s),
+            'GovernorCountingEncrypted: castVoteWithReasonAndParamsBySig unavailable'
+          );
+        });
+      })
 
       describe('state', function () {
         beforeEach(async function () {
