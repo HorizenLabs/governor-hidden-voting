@@ -1,11 +1,20 @@
 # Governor hidden voting
+Horizen Labs developed an on-chain private voting solution which can be deployed on EVM-compatible blockchains, and is compatible with the widely adopted [OpenZeppelin Governor framework](https://docs.openzeppelin.com/contracts/4.x/api/governance).
+
+An overview of the protocol:
+- Votes are encrypted using a **linear homomorphic encryption scheme** (El-Gamal instantiated on curve bn254 to be precise).
+- **Only Yes/No votes are considered**, even though it would be feasible to extend the protocol to more general ballot types.
+- **Our protocol relies on a tallying authority**, an entity who possesses some private information which enables them to perform tallying.
+
+The solution migrates [Helios voting protocol](https://eprint.iacr.org/2016/765.pdf) to on-chain, using linear homomorphic encryption of the votes and efficient zk-proofs to guarantee:
+- integrity of the voting process
+- privacy of the votes
+- censorship resistance
+- reasonable gas costs
+
+For additional details, please visit our [blog post](https://hackmd.io/@hackmdhl/BJSz8pnan).
 
 ## Descritpion of the protocol
-This repository implements a proof of concept for private voting on blockchain.
-The protocol is based on the Helios voting system ([https://eprint.iacr.org/2016/765.pdf](https://eprint.iacr.org/2016/765.pdf)) with a few modifications:
-- an EVM compatible chain is used both as a public bulletin board to cast encrypted votes and as a zk-proof checker
-- EC ElGamal encryption is adopted. The bn256 curve is used, chiefly because the EVM has precompiled contracts for efficiently executing arithmetic on this curve
-
 The rough idea is the following:
 - Users cast their vote in encrypted form, using a linearly-homomorphic, asymmetric encryption scheme (EC ElGamal). The encryption key is public, while the decryption key is only known to the tallying authority.
 - To ensure that the vote is valid (i.e. it encodes a 0 (Against) or a 1 (For)) without requiring decryption, users should also send a zk-proof of vote well-formedness together with their vote.
