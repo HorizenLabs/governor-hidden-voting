@@ -1,8 +1,36 @@
-# Private on-chain voting
-This repository implements a proof of concept for private voting on blockchain.
-The protocol is based on the Helios voting system ([https://eprint.iacr.org/2016/765.pdf](https://eprint.iacr.org/2016/765.pdf)) with a few modifications:
-- an EVM compatible chain is used both as a public bulletin board to cast encrypted votes and as a zk-proof checker
-- EC ElGamal encryption is adopted. The bn256 curve is used, chiefly because the EVM has precompiled contracts for efficiently executing arithmetic on this curve
+# Governor hidden voting
+Horizen Labs developed an on-chain private voting solution which can be deployed on EVM-compatible blockchains, and is compatible with the widely adopted [OpenZeppelin Governor framework](https://docs.openzeppelin.com/contracts/4.x/api/governance).
+
+An overview of the protocol:
+- Votes are encrypted using a **linear homomorphic encryption scheme** (El-Gamal instantiated on curve bn254 to be precise).
+- **Only Yes/No votes are considered**, even though it would be feasible to extend the protocol to more general ballot types.
+- **Our protocol relies on a tallying authority**, an entity who possesses some private information which enables them to perform tallying.
+
+The solution migrates [Helios voting protocol](https://eprint.iacr.org/2016/765.pdf) to on-chain, using linear homomorphic encryption of the votes and efficient zk-proofs to guarantee:
+- integrity of the voting process
+- privacy of the votes
+- censorship resistance
+- reasonable gas costs
+
+For additional details, please visit our [blog post](https://hackmd.io/@hackmdhl/BJSz8pnan).
+
+## Description of the protocol
+The rough idea is the following:
+- Users cast their vote in encrypted form, using a linearly-homomorphic, asymmetric encryption scheme (EC ElGamal). The encryption key is public, while the decryption key is only known to the tallying authority.
+- To ensure that the vote is valid (i.e. it encodes a 0 (Against) or a 1 (For)) without requiring decryption, users should also send a zk-proof of vote well-formedness together with their vote.
+- The encrypted votes and zk-proofs of vote well-formedness are received by a smart contract. If the zk-proof is invalid, then the vote is discarded. Otherwise, the smart contract scales the encrypted vote by the voting power of the respective voter, and then accumulates the result into a running total. This is possible thanks to the homomorphic property of the encryption scheme.
+- At the end of the voting period, the tallying authority, using its secret decryption key, decrypts the accumulated result and posts it on-chain, together with a zk-proof of correct decryption.
+
+The tallying authority must be trusted because, even if the protocol prevents it from forging invalid votes, or censoring legitimate votes, it can still:
+- Decrypt any individual vote. This could be mitigated by implementing a threshold decryption scheme and appointing multiple independent tallying authorities, so that no individual entity can decrypt single votes. The cryptographic backend does not yet implement this feature, but it is described in [https://eprint.iacr.org/2016/765.pdf](https://eprint.iacr.org/2016/765.pdf)
+- Refuse to perform tallying, making it impossible to know the final result. This could be mitigated by putting in place some crypto-economic deterrent (e.g. requiring to put up some collateral to become a tallying authority, and slashing it in case of malicious behavior).
+## Compatibility with OpenZeppelin Governor
+The contracts contained inside [smart-contracts/contracts/openzeppelin-voting](smart-contracts/contracts/openzeppelin-voting) allow to deploy the proposed private voting solution as a Governor contract, using the modular OpenZeppelin governance framework.
+
+A DAO wanting to implement private voting would have to:
+- Update its Governor contract to use our GovernorEncrypted module (see the [GovernorEncryptedMock](smart-contracts/contracts/mocks/GovernorEncryptedMock.sol) contract for a concrete example).
+- Appoint a trusted entity as tallying authority, whose duty is to decrypt the result at the end of the voting period (see [openzeppelin-voting readme](smart-contracts/contracts/openzeppelin-voting/README.md) for an explanation of the lifecycle of a proposal).
+- Develop a frontend for users to interact with the contract. Unfortunately [Tally](https://tally.xyz), the most used frontend for Governor-like governance contracts, is not compatible with our solution. This is unavoidable, since private voting is a novelty in the field of on-chain governance. The [wasm module](backend/wasm) should make it easy to interact with the cryptographic backend directly from a browser.
 
 ## Repo structure
 - [`backend`](./backend/), a cryptographic backend written in Go, which implements functions for:
