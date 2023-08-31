@@ -14,7 +14,7 @@ The solution migrates [Helios voting protocol](https://eprint.iacr.org/2016/765.
 
 For additional details, please visit our [blog post](https://hackmd.io/@hackmdhl/BJSz8pnan).
 
-## Descritpion of the protocol
+## Description of the protocol
 The rough idea is the following:
 - Users cast their vote in encrypted form, using a linearly-homomorphic, asymmetric encryption scheme (EC ElGamal). The encryption key is public, while the decryption key is only known to the tallying authority.
 - To ensure that the vote is valid (i.e. it encodes a 0 (Against) or a 1 (For)) without requiring decryption, users should also send a zk-proof of vote well-formedness together with their vote.
